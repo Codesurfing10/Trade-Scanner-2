@@ -16,14 +16,14 @@ Provide a CSV with one row per ticker snapshot using this schema:
 
 A sample file is included at:
 
-- `/home/runner/work/Trade-Scanner-2/Trade-Scanner-2/data/sample_metrics.csv`
+- `data/sample_metrics.csv`
 
 ## Build outputs for GitHub Pages
 
 Run:
 
 ```bash
-cd /home/runner/work/Trade-Scanner-2/Trade-Scanner-2
+cd <repo-root>
 python build_pages.py
 ```
 
@@ -37,6 +37,6 @@ To publish on GitHub Pages, configure Pages to serve from the repository branch 
 ## Tests
 
 ```bash
-cd /home/runner/work/Trade-Scanner-2/Trade-Scanner-2
+cd <repo-root>
 python -m unittest discover -s tests -v
 ```
