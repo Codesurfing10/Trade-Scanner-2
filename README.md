@@ -33,9 +33,11 @@ python build_pages.py AAPL MSFT TSLA NVDA
 
 ## GitHub Pages setup
 
-1. Push to GitHub.
-2. Go to **Settings → Pages** and set the source to the `docs/` folder on your default branch.
-3. Run `python build_pages.py`, commit `docs/stocks.json`, and push to update the live site.
+1. Push this repository to GitHub.
+2. Go to **Settings → Pages** and set the source to **GitHub Actions**.
+3. Push to `main` (or run the **Deploy GitHub Pages** workflow manually from the Actions tab).
+
+The workflow at `.github/workflows/deploy-pages.yml` installs dependencies, runs `python build_pages.py`, and publishes `docs/` to GitHub Pages.
 
 ## Running tests
 
