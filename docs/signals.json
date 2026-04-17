@@ -1,0 +1,197 @@
+[
+  {
+    "ticker": "LUNR",
+    "date": "2026-04-01",
+    "price": 16.85,
+    "stage_2": true,
+    "volume_confirmation": true,
+    "breakout": true,
+    "pullback": false,
+    "obv_new_high_bonus": true,
+    "action_signal": true,
+    "alerts": {
+      "daily_eod_scan": true,
+      "intraday_rvol": true,
+      "pre_market_shortlist": false
+    },
+    "entry_plan": {
+      "buy_window": "2026-04-01 to 2026-04-03",
+      "hold_days": 7,
+      "hold_until": "2026-04-08",
+      "conviction": "high",
+      "blocks": 4,
+      "capital_deployed_usd": 4000,
+      "max_risk_usd": 320.0
+    },
+    "risk_management": {
+      "hard_stop": 15.502,
+      "trailing_stop": 15.165,
+      "trim_1_price": 20.22,
+      "trim_2_price": 21.905
+    },
+    "metrics": {
+      "sma50": 14.9,
+      "sma150": 12.4,
+      "high_52w": 18.2,
+      "rvol": 2.4,
+      "pct_change": 6.0,
+      "rs_rating": 84.0
+    }
+  },
+  {
+    "ticker": "FLY",
+    "date": "2026-04-06",
+    "price": 11.9,
+    "stage_2": true,
+    "volume_confirmation": true,
+    "breakout": true,
+    "pullback": false,
+    "obv_new_high_bonus": true,
+    "action_signal": true,
+    "alerts": {
+      "daily_eod_scan": true,
+      "intraday_rvol": true,
+      "pre_market_shortlist": false
+    },
+    "entry_plan": {
+      "buy_window": "2026-04-06 to 2026-04-08",
+      "hold_days": 7,
+      "hold_until": "2026-04-13",
+      "conviction": "high",
+      "blocks": 4,
+      "capital_deployed_usd": 4000,
+      "max_risk_usd": 320.0
+    },
+    "risk_management": {
+      "hard_stop": 10.948,
+      "trailing_stop": 10.71,
+      "trim_1_price": 14.28,
+      "trim_2_price": 15.47
+    },
+    "metrics": {
+      "sma50": 9.7,
+      "sma150": 8.4,
+      "high_52w": 12.5,
+      "rvol": 3.0,
+      "pct_change": 8.8,
+      "rs_rating": 91.0
+    }
+  },
+  {
+    "ticker": "ASTS",
+    "date": "2026-04-01",
+    "price": 28.4,
+    "stage_2": true,
+    "volume_confirmation": true,
+    "breakout": true,
+    "pullback": true,
+    "obv_new_high_bonus": true,
+    "action_signal": true,
+    "alerts": {
+      "daily_eod_scan": true,
+      "intraday_rvol": true,
+      "pre_market_shortlist": false
+    },
+    "entry_plan": {
+      "buy_window": "2026-04-01 to 2026-04-03",
+      "hold_days": 7,
+      "hold_until": "2026-04-08",
+      "conviction": "high",
+      "blocks": 4,
+      "capital_deployed_usd": 4000,
+      "max_risk_usd": 320.0
+    },
+    "risk_management": {
+      "hard_stop": 26.128,
+      "trailing_stop": 25.56,
+      "trim_1_price": 34.08,
+      "trim_2_price": 36.92
+    },
+    "metrics": {
+      "sma50": 24.2,
+      "sma150": 19.1,
+      "high_52w": 31.0,
+      "rvol": 2.3,
+      "pct_change": 5.1,
+      "rs_rating": 86.0
+    }
+  },
+  {
+    "ticker": "RDW",
+    "date": "2026-04-06",
+    "price": 14.3,
+    "stage_2": true,
+    "volume_confirmation": true,
+    "breakout": true,
+    "pullback": true,
+    "obv_new_high_bonus": false,
+    "action_signal": true,
+    "alerts": {
+      "daily_eod_scan": true,
+      "intraday_rvol": false,
+      "pre_market_shortlist": false
+    },
+    "entry_plan": {
+      "buy_window": "2026-04-06 to 2026-04-08",
+      "hold_days": 5,
+      "hold_until": "2026-04-11",
+      "conviction": "standard",
+      "blocks": 2,
+      "capital_deployed_usd": 2000,
+      "max_risk_usd": 160.0
+    },
+    "risk_management": {
+      "hard_stop": 13.156,
+      "trailing_stop": 12.87,
+      "trim_1_price": 17.16,
+      "trim_2_price": 18.59
+    },
+    "metrics": {
+      "sma50": 13.1,
+      "sma150": 10.95,
+      "high_52w": 15.1,
+      "rvol": 1.8,
+      "pct_change": 3.4,
+      "rs_rating": 79.0
+    }
+  },
+  {
+    "ticker": "XYZ",
+    "date": "2026-04-06",
+    "price": 8.2,
+    "stage_2": false,
+    "volume_confirmation": false,
+    "breakout": false,
+    "pullback": true,
+    "obv_new_high_bonus": false,
+    "action_signal": false,
+    "alerts": {
+      "daily_eod_scan": false,
+      "intraday_rvol": false,
+      "pre_market_shortlist": false
+    },
+    "entry_plan": {
+      "buy_window": "2026-04-06 to 2026-04-08",
+      "hold_days": 3,
+      "hold_until": "2026-04-09",
+      "conviction": "no_trade",
+      "blocks": 0,
+      "capital_deployed_usd": 0,
+      "max_risk_usd": 0.0
+    },
+    "risk_management": {
+      "hard_stop": 7.544,
+      "trailing_stop": 7.938,
+      "trim_1_price": 9.84,
+      "trim_2_price": 10.66
+    },
+    "metrics": {
+      "sma50": 8.1,
+      "sma150": 8.35,
+      "high_52w": 10.6,
+      "rvol": 0.9,
+      "pct_change": -1.2,
+      "rs_rating": 55.0
+    }
+  }
+]
