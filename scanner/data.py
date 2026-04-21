@@ -1,39 +1,141 @@
-# Existing Symbols
-DEFAULT_SYMBOLS = [
-    # Existing symbols here
-    'AAPL',
-    'GOOG',
-    'TSLA',
-    'AMZN',
-    # ... other existing symbols
+"""
+Curated list of stock symbols and yfinance-based data fetching.
+"""
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+import pandas as pd
+import yfinance as yf
+
+logger = logging.getLogger(__name__)
+
+# Default universe: large-cap US stocks across major sectors
+DEFAULT_SYMBOLS: list[str] = [
+    # Technology
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMD",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "AMZN",
+    "NFLX",
+    "CRM",
+    "ORCL",
+    "INTC",
+    "QCOM",
+    "TXN",
+    "AVGO",
+
+    # Finance
+    "JPM",
+    "BAC",
+    "GS",
+    "MS",
+    "V",
+    "MA",
+    "PYPL",
+
+    # Consumer (Discretionary / Retail)
+    "WMT",
+    "COST",
+    "TGT",
+    "HD",
+    "NKE",
+    "MCD",
+
+    # Consumer Staples
+    "PG",
+    "KO",
+    "PEP",
+    "MDLZ",
+    "CL",
+    "KMB",
+    "GIS",
+    "KHC",
+    "CLX",
+    "PM",
+    "MO",
+
+    # Healthcare
+    "JNJ",
+    "PFE",
+    "ABBV",
+    "MRK",
+    "UNH",
+
+    # Energy
+    "XOM",
+    "CVX",
+    "OXY",
+
+    # Communication / Media
+    "DIS",
+    "T",
+    "VZ",
+
+    # Industrials / Defense
+    "LMT",
+    "NOC",
+    "RTX",
+    "GD",
+    "HII",
+    "LHX",
+    "BA",
+
+    # Space
+    "IRDM",
+
+    # Quantum
+    "IONQ",
+    "RGTI",
+    "QTUM",
+
+    # Materials / Metals / Mining
+    "LIN",
+    "APD",
+    "SHW",
+    "ECL",
+    "FCX",
+
+    # Commodities & Metals (ETFs / exposures)
+    "GLD",
+    "SLV",
+    "PPLT",
+    "DBA",
+    "USO",
+    "UNG",
+    "XLE",
+    "XME",
+    "COPX",
 ]
 
-# Consumer Staples
-DEFAULT_SYMBOLS.extend([
-    'PG', 'KO', 'PEP', 'MDLZ', 'CL', 'KMB', 'GIS', 'KHC', 'CLX', 'PM', 'MO'
-])
+def fetch_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
+    """Return OHLCV DataFrame for *symbol* over *period*.
 
-# Industrials/Defense
-DEFAULT_SYMBOLS.extend([
-    'LMT', 'NOC', 'RTX', 'GD', 'HII', 'LHX', 'BA'
-])
+    Returns an empty DataFrame on any error.
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        if df.empty:
+            logger.warning("No data returned for %s", symbol)
+        return df
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Failed to fetch %s: %s", symbol, exc)
+        return pd.DataFrame()
 
-# Space
-DEFAULT_SYMBOLS.extend([
-    'IRDM'
-])
+def fetch_info(symbol: str) -> dict[str, Any]:
+    """Return a dict of fundamental info for *symbol*.
 
-# Quantum/Compute Proxy
-DEFAULT_SYMBOLS.extend([
-    'IBM'
-])
-
-# Materials/Metals/Mining
-DEFAULT_SYMBOLS.extend([
-    'LIN', 'APD', 'SHW', 'ECL', 'FCX'
-])
-
-# Commodities & Metals Exposures (ETFs)
-DEFAULT_SYMBOLS.extend([
-    'GLD', 'SLV', 'PPLT', 'DBA', 'USO', 'UNG', 'XLE', 'XME', 'COPX'
-])
+    Falls back to an empty dict on error.
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        return ticker.info or {}
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Failed to fetch info for %s: %s", symbol, exc)
+        return {}
