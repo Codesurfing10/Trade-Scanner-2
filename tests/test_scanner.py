@@ -6,8 +6,11 @@ from unittest.mock import patch
 import pandas as pd
 
 from scanner.scanner import (
+    _action_signal,
     _classify_macd,
     _classify_rsi,
+    _classify_stage,
+    _classify_stage2_volume_confirmation,
     _classify_trend,
     _classify_volume,
     _determine_signal_type,
@@ -109,8 +112,36 @@ class TestDetermineSignalType(unittest.TestCase):
         self.assertEqual(_determine_signal_type([]), "neutral")
 
 
+class TestStageAnalysis(unittest.TestCase):
+    def test_stage2_advancing(self):
+        self.assertEqual(_classify_stage(120.0, 100.0, 0.5), "Stage 2 (Advancing)")
+
+    def test_stage4_declining(self):
+        self.assertEqual(_classify_stage(90.0, 100.0, -0.5), "Stage 4 (Declining)")
+
+    def test_stage_na(self):
+        self.assertEqual(_classify_stage(100.0, float("nan"), 0.1), "N/A")
+
+    def test_stage2_volume_confirmation(self):
+        self.assertEqual(
+            _classify_stage2_volume_confirmation("Stage 2 (Advancing)", 2_000_000, 1_500_000.0),
+            "Strong Volume Confirmation",
+        )
+
+    def test_stage2_volume_not_confirmed(self):
+        self.assertEqual(
+            _classify_stage2_volume_confirmation("Stage 2 (Advancing)", 1_000_000, 1_500_000.0),
+            "N/A",
+        )
+
+    def test_action_signal_rules(self):
+        self.assertEqual(_action_signal("Stage 2 (Advancing)", "Strong Volume Confirmation"), "BUY")
+        self.assertEqual(_action_signal("Stage 4 (Declining)", "N/A"), "SELL")
+        self.assertEqual(_action_signal("Transitional", "N/A"), "HOLD")
+
+
 class TestScanSymbol(unittest.TestCase):
-    def _make_rising_df(self, size=70):
+    def _make_rising_df(self, size=260):
         closes = [100.0 + i * 0.5 for i in range(size)]
         return _make_df(closes)
 
@@ -122,7 +153,9 @@ class TestScanSymbol(unittest.TestCase):
 
         self.assertIsNotNone(result)
         for key in ("symbol", "name", "price", "change_pct", "rsi", "sma20",
-                    "sma50", "signals", "signal_type"):
+                    "sma50", "sma150", "slope_sma150", "stage_classification",
+                    "confirms_stage2_volume", "action_signal", "volume_10week_ma",
+                    "signals", "signal_type"):
             self.assertIn(key, result)
 
     @patch("scanner.scanner.fetch_info", return_value={})

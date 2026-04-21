@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from scanner.indicators import atr, ema, macd, rsi, sma, volume_ratio
+from scanner.indicators import atr, ema, macd, rsi, slope_sma150, sma, volume_ratio
 
 
 def _series(values):
@@ -119,6 +119,18 @@ class TestATR(unittest.TestCase):
         l = _series([0.9] * 5)
         c = _series([1.0] * 5)
         result = atr(h, l, c)
+        self.assertTrue(math.isnan(result))
+
+
+class TestSlopeSMA150(unittest.TestCase):
+    def test_returns_positive_for_rising_series(self):
+        s = _series([100.0 + i for i in range(200)])
+        result = slope_sma150(s)
+        self.assertFalse(math.isnan(result))
+        self.assertGreater(result, 0)
+
+    def test_insufficient_data(self):
+        result = slope_sma150(_series([100.0] * 100))
         self.assertTrue(math.isnan(result))
 
 

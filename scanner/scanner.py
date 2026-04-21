@@ -11,7 +11,7 @@ import math
 from typing import Any
 
 from .data import DEFAULT_SYMBOLS, fetch_history, fetch_info
-from .indicators import atr, ema, macd, rsi, sma, volume_ratio
+from .indicators import atr, ema, macd, rsi, slope_sma150, sma, volume_ratio
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +81,37 @@ def _determine_signal_type(signals: list[str]) -> str:
     return "neutral"
 
 
+def _classify_stage(price: float, sma150_val: float, slope_val: float) -> str:
+    if math.isnan(sma150_val) or math.isnan(slope_val):
+        return "N/A"
+    if price >= sma150_val and slope_val > 0:
+        return "Stage 2 (Advancing)"
+    if price < sma150_val and slope_val < 0:
+        return "Stage 4 (Declining)"
+    return "Transitional"
+
+
+def _classify_stage2_volume_confirmation(stage: str, daily_volume: int, volume_10week_ma: float) -> str:
+    if stage == "Stage 2 (Advancing)" and not math.isnan(volume_10week_ma) and daily_volume > volume_10week_ma:
+        return "Strong Volume Confirmation"
+    return "N/A"
+
+
+def _action_signal(stage: str, confirms_stage2_volume: str) -> str:
+    if stage == "Stage 2 (Advancing)" and confirms_stage2_volume == "Strong Volume Confirmation":
+        return "BUY"
+    if stage == "Stage 4 (Declining)":
+        return "SELL"
+    return "HOLD"
+
+
 # ---------------------------------------------------------------------------
 # Single-symbol scanner
 # ---------------------------------------------------------------------------
 
 def scan_symbol(symbol: str) -> dict[str, Any] | None:
     """Fetch data for *symbol* and return a result dict, or ``None`` on failure."""
-    df = fetch_history(symbol, period="3mo")
+    df = fetch_history(symbol, period="1y")
     if df.empty or len(df) < 20:
         logger.warning("Skipping %s — insufficient price history", symbol)
         return None
@@ -105,13 +129,23 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
     rsi_val = rsi(close)
     sma20_val = sma(close, 20)
     sma50_val = sma(close, 50)
+    sma150_val = sma(close, 150)
+    slope_sma150_val = slope_sma150(close, window=20)
     ema9_val = ema(close, 9)
     macd_data = macd(close)
     vol_ratio = volume_ratio(volume)
     atr_val = atr(high, low, close)
+    volume_10week_ma_val = sma(volume, 50)
 
     current_volume = int(volume.iloc[-1])
     avg_volume = int(volume.shift(1).rolling(window=20).mean().iloc[-1]) if len(volume) >= 21 else current_volume
+    stage_classification = _classify_stage(price, sma150_val, slope_sma150_val)
+    confirms_stage2_volume = _classify_stage2_volume_confirmation(
+        stage_classification,
+        current_volume,
+        volume_10week_ma_val,
+    )
+    action_signal = _action_signal(stage_classification, confirms_stage2_volume)
 
     signals: list[str] = []
     signals.extend(_classify_rsi(rsi_val))
@@ -151,11 +185,19 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
         "rsi": _safe(rsi_val),
         "sma20": _safe(sma20_val),
         "sma50": _safe(sma50_val),
+        "sma150": _safe(sma150_val),
+        "slope_sma150": _safe(slope_sma150_val),
         "ema9": _safe(ema9_val),
         "macd": _safe(macd_data["macd"]),
         "macd_signal": _safe(macd_data["signal"]),
         "macd_histogram": _safe(macd_data["histogram"]),
         "atr": _safe(atr_val),
+        "volume_10week_ma": _safe(volume_10week_ma_val),
+        "stage_classification": stage_classification,
+        "confirms_stage2_volume": confirms_stage2_volume,
+        "action_signal": action_signal,
+        "stage_analysis_summary": action_signal,
+        "position": action_signal,
         "signals": signals,
         "signal_type": signal_type,
     }
