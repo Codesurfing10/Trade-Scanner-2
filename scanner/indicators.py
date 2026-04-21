@@ -41,6 +41,23 @@ def sma(series: pd.Series, period: int) -> float:
     return float(series.rolling(window=period).mean().iloc[-1])
 
 
+def slope_sma150(series: pd.Series, window: int = 20) -> float:
+    """Slope of SMA150 over *window* sessions.
+
+    Definition:
+        (sma150_today - sma150_[window]_sessions_ago) / window
+    """
+    period = 150
+    if not _require(series, period + window):
+        return float("nan")
+    sma150_series = series.rolling(window=period).mean()
+    current = float(sma150_series.iloc[-1])
+    past = float(sma150_series.iloc[-(window + 1)])
+    if math.isnan(current) or math.isnan(past):
+        return float("nan")
+    return float((current - past) / window)
+
+
 def ema(series: pd.Series, period: int) -> float:
     """Exponential Moving Average."""
     if not _require(series, period):

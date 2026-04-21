@@ -20,6 +20,7 @@
       --overbought:#a371f7;
       --neutral:   #8b949e;
       --high-vol:  #ffa657;
+      --hold:      #d29922;
     }
     body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; min-height: 100vh; }
 
@@ -87,6 +88,9 @@
     .badge-macd-bull  { background: rgba(63,185,80,.10);  color: var(--bullish); border: 1px solid rgba(63,185,80,.3); }
     .badge-macd-bear  { background: rgba(248,81,73,.10);  color: var(--bearish); border: 1px solid rgba(248,81,73,.3); }
     .badge-default    { background: rgba(139,148,158,.1); color: var(--muted); }
+    .badge-action-buy  { background: rgba(63,185,80,.18);  color: var(--bullish); border: 1px solid rgba(63,185,80,.35); }
+    .badge-action-sell { background: rgba(248,81,73,.18);  color: var(--bearish); border: 1px solid rgba(248,81,73,.35); }
+    .badge-action-hold { background: rgba(210,153,34,.18); color: var(--hold); border: 1px solid rgba(210,153,34,.35); }
 
     /* ── Row accent ── */
     .row-bullish    td:first-child { border-left: 3px solid var(--bullish); }
@@ -170,6 +174,13 @@
         <th data-col="sma20">SMA 20 <span class="sort-icon">⇅</span></th>
         <th data-col="sma50">SMA 50 <span class="sort-icon">⇅</span></th>
         <th data-col="macd_histogram">MACD Hist <span class="sort-icon">⇅</span></th>
+        <th data-col="sma150">SMA 150 <span class="sort-icon">⇅</span></th>
+        <th data-col="slope_sma150">Slope SMA150 <span class="sort-icon">⇅</span></th>
+        <th data-col="volume_10week_ma">10 Week MA (Vol) <span class="sort-icon">⇅</span></th>
+        <th data-col="stage_classification">Stage Classification <span class="sort-icon">⇅</span></th>
+        <th data-col="confirms_stage2_volume">Confirms Stage 2 Volume <span class="sort-icon">⇅</span></th>
+        <th data-col="action_signal">Action <span class="sort-icon">⇅</span></th>
+        <th data-col="stage_analysis_summary">Stage Analysis Summary <span class="sort-icon">⇅</span></th>
         <th data-col="signals">Signals</th>
       </tr>
     </thead>
@@ -196,6 +207,7 @@
     ratio:  v => v == null ? "—" : v.toFixed(2) + "×",
     rsi:    v => v == null ? "—" : v.toFixed(1),
     sma:    v => v == null ? "—" : "$" + v.toFixed(2),
+    slope:  v => v == null ? "—" : v.toFixed(4),
     macdH:  v => v == null ? "—" : v.toFixed(4),
     date:   s => {
       if (!s) return "";
@@ -226,6 +238,13 @@
     return "";
   }
 
+  function actionBadgeClass(action) {
+    if (action === "BUY") return "badge-action-buy";
+    if (action === "SELL") return "badge-action-sell";
+    if (action === "HOLD") return "badge-action-hold";
+    return "badge-default";
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   function renderRows(stocks) {
@@ -248,6 +267,10 @@
       const badges    = (s.signals || []).map(sig =>
         `<span class="badge ${badgeClass(sig)}">${sig}</span>`
       ).join("");
+      const actionValue = s.action_signal || "HOLD";
+      const actionBadge = `<span class="badge ${actionBadgeClass(actionValue)}">${actionValue}</span>`;
+      const summaryValue = s.stage_analysis_summary || actionValue;
+      const summaryBadge = `<span class="badge ${actionBadgeClass(summaryValue)}">${summaryValue}</span>`;
       return `
         <tr class="row-${s.signal_type || "neutral"}">
           <td><span class="sym">${s.symbol}</span></td>
@@ -260,6 +283,13 @@
           <td>${fmt.sma(s.sma20)}</td>
           <td>${fmt.sma(s.sma50)}</td>
           <td class="${s.macd_histogram > 0 ? "pos" : s.macd_histogram < 0 ? "neg" : ""}">${fmt.macdH(s.macd_histogram)}</td>
+          <td>${fmt.sma(s.sma150)}</td>
+          <td class="${s.slope_sma150 > 0 ? "pos" : s.slope_sma150 < 0 ? "neg" : ""}">${fmt.slope(s.slope_sma150)}</td>
+          <td>${fmt.vol(s.volume_10week_ma)}</td>
+          <td>${s.stage_classification || "N/A"}</td>
+          <td>${s.confirms_stage2_volume || "N/A"}</td>
+          <td><div class="badges">${actionBadge}</div></td>
+          <td><div class="badges">${summaryBadge}</div></td>
           <td><div class="badges">${badges || '<span class="neutral-text">—</span>'}</div></td>
         </tr>`;
     }).join("");
