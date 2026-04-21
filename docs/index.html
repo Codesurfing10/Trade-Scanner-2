@@ -540,13 +540,17 @@
       return String(raw ?? "").toLowerCase();
     }
 
+    function isMissing(value) {
+      return value === "" || value === null || value === undefined || Number.isNaN(value);
+    }
+
     function getDisplayedRows() {
       const filtered = state.stocks.filter(rowMatches);
       const sorted = [...filtered].sort((a, b) => {
         const av = sortableValue(a, state.sortKey);
         const bv = sortableValue(b, state.sortKey);
-        const aMissing = av === "" || av === null || av === undefined || Number.isNaN(av);
-        const bMissing = bv === "" || bv === null || bv === undefined || Number.isNaN(bv);
+        const aMissing = isMissing(av);
+        const bMissing = isMissing(bv);
         if (aMissing && bMissing) return 0;
         if (aMissing) return 1;
         if (bMissing) return -1;
@@ -609,7 +613,7 @@
     }
 
     function exportFilename(ext) {
-      const ts = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
+      const ts = new Date().toISOString().replace(/[:.]/g, "-");
       return `trade-scanner-${ts}.${ext}`;
     }
 
