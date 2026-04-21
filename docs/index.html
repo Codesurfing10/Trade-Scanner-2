@@ -140,6 +140,41 @@
       min-width: 270px;
       width: min(360px, 100%);
     }
+    .table-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .sort-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sort-controls label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .sort-controls select {
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-elev-2);
+      color: var(--text);
+      padding: 7px 9px;
+      font-size: 0.84rem;
+    }
+    .tool-btn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .tool-btn:hover { border-color: rgba(184, 202, 227, 0.35); }
 
     #search {
       width: 100%;
@@ -192,6 +227,15 @@
       top: 0;
       z-index: 2;
       white-space: nowrap;
+    }
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th .sort-arrow {
+      margin-left: 5px;
+      opacity: 0.7;
+      font-size: 0.78rem;
     }
 
     thead th:last-child { border-right: 0; }
@@ -265,6 +309,7 @@
       .stats { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
       .header { flex-direction: column; }
       .controls { flex-direction: column; align-items: stretch; }
+      .table-tools { justify-content: space-between; }
       .search-wrap { margin-left: 0; min-width: 0; width: 100%; }
     }
   </style>
@@ -314,6 +359,29 @@
       <div class="search-wrap">
         <input id="search" type="search" placeholder="Search symbol / name..." aria-label="Search symbol or company name" />
       </div>
+      <div class="table-tools">
+        <div class="sort-controls" aria-label="Sort controls">
+          <label for="sort-column">Sort</label>
+          <select id="sort-column">
+            <option value="symbol">Symbol</option>
+            <option value="name">Name</option>
+            <option value="price">Price</option>
+            <option value="change_pct">Change %</option>
+            <option value="rsi">RSI</option>
+            <option value="macd_histogram">MACD Histogram</option>
+            <option value="stage_classification">Stage</option>
+            <option value="signals">Signals</option>
+            <option value="signal_type">Type</option>
+            <option value="action_signal">Action</option>
+          </select>
+          <select id="sort-direction" aria-label="Sort direction">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+        <button id="export-csv" class="tool-btn" type="button">Export CSV</button>
+        <button id="export-xlsx" class="tool-btn" type="button">Export XLSX</button>
+      </div>
     </section>
 
     <div id="error" class="error"></div>
@@ -322,16 +390,16 @@
       <table id="table" aria-label="Scanner results" style="display:none">
         <thead>
           <tr>
-            <th>Symbol</th>
-            <th>Name</th>
-            <th class="right">Price</th>
-            <th class="right">Change %</th>
-            <th class="right">RSI</th>
-            <th class="right">MACD Histogram</th>
-            <th>Stage</th>
-            <th>Signals</th>
-            <th>Type</th>
-            <th>Action</th>
+            <th class="sortable" data-sort-key="symbol" aria-sort="ascending">Symbol <span class="sort-arrow">▲</span></th>
+            <th class="sortable" data-sort-key="name" aria-sort="none">Name <span class="sort-arrow"></span></th>
+            <th class="right sortable" data-sort-key="price" aria-sort="none">Price <span class="sort-arrow"></span></th>
+            <th class="right sortable" data-sort-key="change_pct" aria-sort="none">Change % <span class="sort-arrow"></span></th>
+            <th class="right sortable" data-sort-key="rsi" aria-sort="none">RSI <span class="sort-arrow"></span></th>
+            <th class="right sortable" data-sort-key="macd_histogram" aria-sort="none">MACD Histogram <span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort-key="stage_classification" aria-sort="none">Stage <span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort-key="signals" aria-sort="none">Signals <span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort-key="signal_type" aria-sort="none">Type <span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort-key="action_signal" aria-sort="none">Action <span class="sort-arrow"></span></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -351,8 +419,26 @@
       stocks: [],
       activeFilter: "all",
       search: "",
+      sortKey: "symbol",
+      sortDir: "asc",
     };
     const TABLE_COLUMN_COUNT = 10;
+    const EXPORT_COLUMNS = [
+      { key: "symbol", label: "Symbol", value: (row) => String(row.symbol ?? "") },
+      { key: "name", label: "Name", value: (row) => String(row.name ?? "") },
+      { key: "price", label: "Price", value: (row) => fmtNum(row.price, 2) },
+      { key: "change_pct", label: "Change %", value: (row) => fmtPct(row.change_pct, 2) },
+      { key: "rsi", label: "RSI", value: (row) => fmtNum(row.rsi, 2) },
+      { key: "macd_histogram", label: "MACD Histogram", value: (row) => fmtNum(row.macd_histogram, 2) },
+      { key: "stage_classification", label: "Stage", value: (row) => String(row.stage_classification ?? "—") },
+      { key: "signals", label: "Signals", value: (row) => {
+        const rawSignals = row.signals;
+        if (Array.isArray(rawSignals)) return rawSignals.join("; ");
+        return rawSignals ? String(rawSignals) : "";
+      }},
+      { key: "signal_type", label: "Type", value: (row) => normalizeType(row.signal_type) },
+      { key: "action_signal", label: "Action", value: (row) => getActionSignal(row) },
+    ];
 
     function fmtNum(x, digits = 2) {
       if (x === null || x === undefined || Number.isNaN(x)) return "—";
@@ -440,12 +526,331 @@
       return symbol.includes(q) || name.includes(q);
     }
 
+    function sortableValue(row, key) {
+      if (key === "action_signal") return getActionSignal(row).toLowerCase();
+      if (key === "signals") {
+        const rawSignals = row.signals;
+        if (Array.isArray(rawSignals)) return rawSignals.join(" ").toLowerCase();
+        return String(rawSignals || "").toLowerCase();
+      }
+
+      const raw = row[key];
+      const n = Number(raw);
+      if (!Number.isNaN(n) && raw !== null && raw !== "") return n;
+      return String(raw ?? "").toLowerCase();
+    }
+
+    function isMissing(value) {
+      return value === "" || value === null || value === undefined || Number.isNaN(value);
+    }
+
+    function getDisplayedRows() {
+      const filtered = state.stocks.filter(rowMatches);
+      const sorted = [...filtered].sort((a, b) => {
+        const av = sortableValue(a, state.sortKey);
+        const bv = sortableValue(b, state.sortKey);
+        const aMissing = isMissing(av);
+        const bMissing = isMissing(bv);
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+
+        let cmp = 0;
+        if (typeof av === "number" && typeof bv === "number") {
+          cmp = av - bv;
+        } else {
+          cmp = String(av).localeCompare(String(bv), undefined, { sensitivity: "base" });
+        }
+        return state.sortDir === "asc" ? cmp : -cmp;
+      });
+      return sorted;
+    }
+
+    function updateSortIndicators() {
+      const headerCells = document.querySelectorAll("th[data-sort-key]");
+      for (const th of headerCells) {
+        const arrow = th.querySelector(".sort-arrow");
+        if (th.dataset.sortKey === state.sortKey) {
+          const asc = state.sortDir === "asc";
+          th.setAttribute("aria-sort", asc ? "ascending" : "descending");
+          arrow.textContent = asc ? "▲" : "▼";
+        } else {
+          th.setAttribute("aria-sort", "none");
+          arrow.textContent = "";
+        }
+      }
+    }
+
+    function onSortKeySelected(key) {
+      if (!key) return;
+      if (state.sortKey === key) {
+        state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+      } else {
+        state.sortKey = key;
+        state.sortDir = "asc";
+      }
+      $("sort-column").value = state.sortKey;
+      $("sort-direction").value = state.sortDir;
+      updateSortIndicators();
+      renderRows();
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      if (/[",\n\r]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
+      return text;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function exportFilename(ext) {
+      const ts = new Date().toISOString().replace(/[:.]/g, "-");
+      return `trade-scanner-${ts}.${ext}`;
+    }
+
+    function xmlEsc(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
+    }
+
+    function columnName(index) {
+      let n = index + 1;
+      let result = "";
+      while (n > 0) {
+        const rem = (n - 1) % 26;
+        result = String.fromCharCode(65 + rem) + result;
+        n = Math.floor((n - 1) / 26);
+      }
+      return result;
+    }
+
+    function toUint32LE(value) {
+      return new Uint8Array([
+        value & 0xff,
+        (value >>> 8) & 0xff,
+        (value >>> 16) & 0xff,
+        (value >>> 24) & 0xff,
+      ]);
+    }
+
+    function toUint16LE(value) {
+      return new Uint8Array([
+        value & 0xff,
+        (value >>> 8) & 0xff,
+      ]);
+    }
+
+    function concatBytes(parts) {
+      const total = parts.reduce((sum, p) => sum + p.length, 0);
+      const out = new Uint8Array(total);
+      let offset = 0;
+      for (const part of parts) {
+        out.set(part, offset);
+        offset += part.length;
+      }
+      return out;
+    }
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < bytes.length; i += 1) {
+        crc ^= bytes[i];
+        for (let j = 0; j < 8; j += 1) {
+          crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+        }
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function dosDateTime(date) {
+      const year = Math.max(1980, date.getFullYear());
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hours = date.getHours();
+      const mins = date.getMinutes();
+      const secs = Math.floor(date.getSeconds() / 2);
+      const dosTime = (hours << 11) | (mins << 5) | secs;
+      const dosDate = ((year - 1980) << 9) | (month << 5) | day;
+      return { dosTime, dosDate };
+    }
+
+    function makeZip(entries) {
+      const encoder = new TextEncoder();
+      const now = dosDateTime(new Date());
+      const files = entries.map((entry) => {
+        const name = encoder.encode(entry.name);
+        const data = encoder.encode(entry.content);
+        const crc = crc32(data);
+        return { name, data, crc };
+      });
+
+      const fileParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      for (const file of files) {
+        const localHeader = concatBytes([
+          toUint32LE(0x04034b50),
+          toUint16LE(20),
+          toUint16LE(0),
+          toUint16LE(0),
+          toUint16LE(now.dosTime),
+          toUint16LE(now.dosDate),
+          toUint32LE(file.crc),
+          toUint32LE(file.data.length),
+          toUint32LE(file.data.length),
+          toUint16LE(file.name.length),
+          toUint16LE(0),
+          file.name,
+        ]);
+        fileParts.push(localHeader, file.data);
+
+        const centralHeader = concatBytes([
+          toUint32LE(0x02014b50),
+          toUint16LE(20),
+          toUint16LE(20),
+          toUint16LE(0),
+          toUint16LE(0),
+          toUint16LE(now.dosTime),
+          toUint16LE(now.dosDate),
+          toUint32LE(file.crc),
+          toUint32LE(file.data.length),
+          toUint32LE(file.data.length),
+          toUint16LE(file.name.length),
+          toUint16LE(0),
+          toUint16LE(0),
+          toUint16LE(0),
+          toUint16LE(0),
+          toUint32LE(0),
+          toUint32LE(offset),
+          file.name,
+        ]);
+        centralParts.push(centralHeader);
+        offset += localHeader.length + file.data.length;
+      }
+
+      const centralDirectory = concatBytes(centralParts);
+      const endRecord = concatBytes([
+        toUint32LE(0x06054b50),
+        toUint16LE(0),
+        toUint16LE(0),
+        toUint16LE(files.length),
+        toUint16LE(files.length),
+        toUint32LE(centralDirectory.length),
+        toUint32LE(offset),
+        toUint16LE(0),
+      ]);
+
+      return concatBytes([...fileParts, centralDirectory, endRecord]);
+    }
+
+    function makeSheetXml(aoa) {
+      const rowXml = aoa.map((row, rowIndex) => {
+        const cells = row.map((value, colIndex) => {
+          const ref = `${columnName(colIndex)}${rowIndex + 1}`;
+          return `<c r="${ref}" t="inlineStr"><is><t>${xmlEsc(value)}</t></is></c>`;
+        }).join("");
+        return `<row r="${rowIndex + 1}">${cells}</row>`;
+      }).join("");
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rowXml}</sheetData></worksheet>`;
+    }
+
+    function makeXlsxBytes(aoa) {
+      const sheetXml = makeSheetXml(aoa);
+      const entries = [
+        {
+          name: "[Content_Types].xml",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`,
+        },
+        {
+          name: "_rels/.rels",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`,
+        },
+        {
+          name: "xl/workbook.xml",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Scanner Results" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`,
+        },
+        {
+          name: "xl/_rels/workbook.xml.rels",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`,
+        },
+        {
+          name: "xl/worksheets/sheet1.xml",
+          content: sheetXml,
+        },
+        {
+          name: "xl/styles.xml",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+  <borders count="1"><border/></borders>
+  <cellStyleXfs count="1"><xf/></cellStyleXfs>
+  <cellXfs count="1"><xf xfId="0"/></cellXfs>
+</styleSheet>`,
+        },
+      ];
+      return makeZip(entries);
+    }
+
+    function exportCsv() {
+      const rows = getDisplayedRows();
+      const header = EXPORT_COLUMNS.map((col) => csvCell(col.label)).join(",");
+      const lines = rows.map((row) => EXPORT_COLUMNS.map((col) => csvCell(col.value(row))).join(","));
+      const csv = [header, ...lines].join("\r\n");
+      downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), exportFilename("csv"));
+    }
+
+    function exportXlsx() {
+      const rows = getDisplayedRows();
+      const aoa = [
+        EXPORT_COLUMNS.map((col) => col.label),
+        ...rows.map((row) => EXPORT_COLUMNS.map((col) => col.value(row))),
+      ];
+      const out = makeXlsxBytes(aoa);
+      const blob = new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      downloadBlob(blob, exportFilename("xlsx"));
+    }
+
     function renderRows() {
       const tbody = $("tbody");
       tbody.innerHTML = "";
 
-      const filtered = state.stocks.filter(rowMatches);
-      if (!filtered.length) {
+      const displayed = getDisplayedRows();
+      if (!displayed.length) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
         td.colSpan = TABLE_COLUMN_COUNT;
@@ -456,7 +861,7 @@
         return;
       }
 
-      for (const row of filtered) {
+      for (const row of displayed) {
         const sym = esc(row.symbol ?? "");
         const name = esc(row.name ?? "");
         const price = fmtNum(row.price, 2);
@@ -517,6 +922,28 @@
         state.search = event.target.value || "";
         renderRows();
       });
+
+      $("sort-column").addEventListener("change", (event) => {
+        state.sortKey = event.target.value || "symbol";
+        $("sort-direction").value = state.sortDir;
+        updateSortIndicators();
+        renderRows();
+      });
+
+      $("sort-direction").addEventListener("change", (event) => {
+        state.sortDir = event.target.value === "desc" ? "desc" : "asc";
+        updateSortIndicators();
+        renderRows();
+      });
+
+      $("table").querySelector("thead").addEventListener("click", (event) => {
+        const th = event.target.closest("th[data-sort-key]");
+        if (!th) return;
+        onSortKeySelected(th.dataset.sortKey);
+      });
+
+      $("export-csv").addEventListener("click", exportCsv);
+      $("export-xlsx").addEventListener("click", exportXlsx);
     }
 
     async function load() {
@@ -535,6 +962,9 @@
         }
 
         updateStats(state.stocks);
+        $("sort-column").value = state.sortKey;
+        $("sort-direction").value = state.sortDir;
+        updateSortIndicators();
         renderRows();
       } catch (err) {
         showError(

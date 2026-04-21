@@ -8,6 +8,7 @@ A Python-powered technical stock scanner with a static GitHub Pages UI.
 - Computes RSI, SMA (20/50), EMA (9), MACD, ATR, and volume ratio
 - Classifies each stock as **Bullish**, **Bearish**, **Oversold**, **Overbought**, **Momentum**, **Breakout**, or **High Volume**
 - Outputs a static `docs/stocks.json` consumed by a dark-themed responsive web UI
+- Web UI supports table sorting (header click + sort dropdowns) and export of current view to CSV/XLSX
 - Deployable to GitHub Pages with a single command
 
 ## Setup
