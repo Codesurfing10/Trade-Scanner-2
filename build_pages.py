@@ -55,7 +55,9 @@ def main(symbols: list[str] | None = None) -> None:
                 isinstance(existing_stocks, list)
                 and existing_stocks
                 and all(
-                    isinstance(row, dict) and isinstance(row.get("symbol"), str)
+                    isinstance(row, dict)
+                    and isinstance(row.get("symbol"), str)
+                    and bool(row.get("symbol").strip())
                     for row in existing_stocks
                 )
             )
