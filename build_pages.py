@@ -38,13 +38,45 @@ def main(symbols: list[str] | None = None) -> None:
     stocks = scan_stocks(symbols)
     print(f"Done — {len(stocks)} result(s) written.")
 
+    out_path = os.path.join(DOCS_DIR, "stocks.json")
+
     payload = {
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "count": len(stocks),
         "stocks": stocks,
     }
 
-    out_path = os.path.join(DOCS_DIR, "stocks.json")
+    if not stocks and os.path.exists(out_path):
+        try:
+            with open(out_path, "r", encoding="utf-8") as fh:
+                existing = json.load(fh)
+            existing_stocks = existing.get("stocks")
+            has_valid_stock_rows = (
+                isinstance(existing_stocks, list)
+                and existing_stocks
+                and all(
+                    isinstance(row, dict)
+                    and isinstance(row.get("symbol"), str)
+                    and bool(row.get("symbol").strip())
+                    for row in existing_stocks
+                )
+            )
+            if has_valid_stock_rows:
+                logging.warning(
+                    "No fresh stock data fetched; preserving existing docs/stocks.json with %d stock(s).",
+                    len(existing_stocks),
+                )
+                payload = existing
+            else:
+                logging.warning(
+                    "No fresh stock data fetched, and existing docs/stocks.json has no valid non-empty 'stocks' list of stock objects.",
+                )
+        except (OSError, json.JSONDecodeError) as exc:
+            logging.warning(
+                "No fresh stock data fetched, and existing docs/stocks.json could not be read as valid JSON: %s",
+                exc,
+            )
+
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
 
