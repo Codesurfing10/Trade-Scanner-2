@@ -3,36 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Trade Scanner</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>SMA 50</th>
-                <th>SMA 150</th>
-                <th>Slope SMA150</th>
-                <th>Daily Volume</th>
-                <th>10 Week MA (Vol)</th>
-                <th>Confirms Stage 2 Volume</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Existing rows will be retained here -->
-        </tbody>
-    </table>
-    <script>
-        // Assuming load() is a function that retrieves data and updates state
-        function load() {
-            // Fetch the updated data
-            fetch('path/to/stocks.json')
-                .then(response => response.json())
-                .then(data => {
-                    state.updated = data.updated; // update the state with fetched data
-                    // additional logic for processing the data
-                });
-        }
-    </script>
+    <header>
+        <h1>Trade Scanner</h1>
+    </header>
+    <main>
+        <p>Welcome to the Trade Scanner application!</p>
+        <p>Use this tool to scan for trading opportunities based on your preferences.</p>
+    </main>
+    <footer>
+        <p>&copy; 2026 Trade Scanner.</p>
+    </footer>
 </body>
 </html>
