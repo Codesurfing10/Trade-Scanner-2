@@ -212,7 +212,7 @@
     }
 
     tbody td:first-child {
-      border-left: 3px solid rgba(55, 214, 122, 0.9);
+      border-left: 3px solid var(--green);
     }
 
     .right { text-align: right; }
@@ -327,7 +327,7 @@
             <th class="right">Price</th>
             <th class="right">Change %</th>
             <th class="right">RSI</th>
-            <th class="right">MACD Hist</th>
+            <th class="right">MACD Histogram</th>
             <th>Stage</th>
             <th>Signals</th>
             <th>Type</th>
@@ -352,6 +352,7 @@
       activeFilter: "all",
       search: "",
     };
+    const TABLE_COLUMN_COUNT = 10;
 
     function fmtNum(x, digits = 2) {
       if (x === null || x === undefined || Number.isNaN(x)) return "—";
@@ -365,6 +366,7 @@
     }
 
     function esc(value) {
+      // Escape HTML entities before injecting external stock data into row templates.
       return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -399,6 +401,10 @@
       if (a === "buy") return "buy";
       if (a === "sell") return "sell";
       return "hold";
+    }
+
+    function getActionSignal(row) {
+      return String(row.action_signal ?? row.position ?? row.stage_analysis_summary ?? "HOLD").toUpperCase();
     }
 
     function updateStats(stocks) {
@@ -441,7 +447,10 @@
       const filtered = state.stocks.filter(rowMatches);
       if (!filtered.length) {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="10">No matching results.</td>`;
+        const td = document.createElement("td");
+        td.colSpan = TABLE_COLUMN_COUNT;
+        td.textContent = "No matching results.";
+        tr.appendChild(td);
         tbody.appendChild(tr);
         $("table").style.display = "table";
         return;
@@ -459,13 +468,14 @@
         const stage = esc(row.stage_classification ?? "—");
 
         const type = normalizeType(row.signal_type);
-        const action = String(row.action_signal ?? row.position ?? row.stage_analysis_summary ?? "HOLD").toUpperCase();
+        const action = getActionSignal(row);
         const actionCls = actionClass(action);
 
-        const sigs = Array.isArray(row.signals) ? row.signals : [];
+        const rawSignals = row.signals;
+        const sigs = Array.isArray(rawSignals) ? rawSignals : [];
         const sigHtml = sigs.length
           ? `<div class="signals">${sigs.map(s => `<span class="sig ${sigClass(s)}">${esc(s)}</span>`).join("")}</div>`
-          : "—";
+          : (rawSignals ? esc(String(rawSignals)) : "—");
 
         const chgClass = Number.isNaN(chgRaw) ? "" : (chgRaw >= 0 ? "positive" : "negative");
         const macdClass = Number.isNaN(macdHistRaw) ? "" : (macdHistRaw >= 0 ? "positive" : "negative");
