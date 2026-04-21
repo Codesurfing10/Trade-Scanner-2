@@ -1,14 +1,23 @@
-# Space
-DEFAULT_SYMBOLS = ['IRDM', 'LUNR', 'RDW']
+"""
+Module for fetching stock data using yfinance.
+"""
 
-# Commodities & Metals
-# [existing symbols]
+import pandas as pd
+import yfinance as yf
 
-# Precious Metals (miners / exposures)
-DEFAULT_SYMBOLS += ['GDX', 'GDXJ']
 
-# Aluminum
-DEFAULT_SYMBOLS += ['AA']
+def fetch_history(symbol, period='1y'):
+    try:
+        data = yf.download(symbol, period=period)
+        result = data[['Open', 'High', 'Low', 'Close', 'Volume']].reset_index(drop=True)
+        return result
+    except Exception:
+        return pd.DataFrame()  # return empty DataFrame on failure
 
-# Grains
-DEFAULT_SYMBOLS += ['WEAT', 'CORN', 'SOYB', 'DBA']
+
+def fetch_info(symbol):
+    try:
+        info = yf.Ticker(symbol).info
+        return {"shortName": info.get('shortName', None)}
+    except Exception:
+        return {}  # return empty dict on failure
