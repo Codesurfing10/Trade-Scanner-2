@@ -57,8 +57,14 @@ def main(symbols: list[str] | None = None) -> None:
                     len(existing_stocks),
                 )
                 payload = existing
+            else:
+                logging.warning(
+                    "No fresh stock data fetched, and existing docs/stocks.json has no valid non-empty 'stocks' list.",
+                )
         except (OSError, json.JSONDecodeError):
-            pass
+            logging.warning(
+                "No fresh stock data fetched, and existing docs/stocks.json could not be read as valid JSON.",
+            )
 
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
