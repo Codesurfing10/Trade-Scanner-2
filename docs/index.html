@@ -5,89 +5,353 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Trade Scanner</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #0b0f17; color: #e6e8ee; }
-    header { padding: 24px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    h1 { margin: 0; font-size: 22px; }
-    main { padding: 16px; max-width: 1100px; margin: 0 auto; }
-    .meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #aab0bf; margin-top: 8px; }
-    .pill { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 999px; }
-    .error { background: rgba(255,0,0,0.08); border: 1px solid rgba(255,0,0,0.25); padding: 12px; border-radius: 10px; margin: 12px 0; color: #ffd2d2; display: none; white-space: pre-wrap; }
-    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; vertical-align: top; }
-    th { position: sticky; top: 0; background: #0b0f17; z-index: 1; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #aab0bf; }
-    tr:hover td { background: rgba(255,255,255,0.03); }
+    :root {
+      --bg: #060b14;
+      --bg-elev: #101826;
+      --bg-elev-2: #0c1320;
+      --text: #e7edf7;
+      --muted: #97a5bb;
+      --border: rgba(184, 202, 227, 0.16);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+      --blue: #4f8cff;
+      --green: #37d67a;
+      --red: #ff6b6b;
+      --orange: #ffb259;
+      --purple: #ad79ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 85% -20%, #1b2440 0%, transparent 55%),
+                  radial-gradient(900px 600px at -10% -30%, #13223f 0%, transparent 60%),
+                  var(--bg);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 16px 24px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle,
+    .last-updated {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat-card {
+      padding: 14px;
+      min-height: 90px;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-size: 1.7rem;
+      font-weight: 750;
+      line-height: 1;
+    }
+
+    .blue { color: var(--blue); }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .orange { color: var(--orange); }
+    .purple { color: var(--purple); }
+
+    .controls {
+      padding: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: #d6dfef;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .pill:hover { border-color: rgba(184, 202, 227, 0.35); }
+    .pill.active {
+      background: rgba(79, 140, 255, 0.2);
+      border-color: rgba(79, 140, 255, 0.45);
+      color: #cfe1ff;
+      box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.18);
+    }
+
+    .search-wrap {
+      margin-left: auto;
+      min-width: 270px;
+      width: min(360px, 100%);
+    }
+
+    #search {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-elev-2);
+      color: var(--text);
+      font-size: 0.92rem;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    #search::placeholder { color: #7e8da6; }
+    #search:focus { border-color: rgba(79, 140, 255, 0.55); }
+
+    .error {
+      background: rgba(255, 107, 107, 0.14);
+      border: 1px solid rgba(255, 107, 107, 0.45);
+      padding: 12px;
+      border-radius: 12px;
+      margin: 10px 0;
+      color: #ffd9d9;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1080px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px 10px;
+      background: #0b1423;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid rgba(184, 202, 227, 0.08);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #a9b7cd;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      white-space: nowrap;
+    }
+
+    thead th:last-child { border-right: 0; }
+
+    tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.02); }
+    tbody tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
+
+    tbody tr:hover td {
+      background: rgba(79, 140, 255, 0.08);
+      transition: background 0.15s ease;
+    }
+
+    td {
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(184, 202, 227, 0.09);
+      vertical-align: top;
+      font-size: 0.86rem;
+    }
+
+    tbody td:first-child {
+      border-left: 3px solid rgba(55, 214, 122, 0.9);
+    }
+
     .right { text-align: right; }
+    .positive { color: var(--green); font-weight: 700; }
+    .negative { color: var(--red); font-weight: 700; }
 
-    /* existing "Type" tag styles */
-    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(255,255,255,0.12); white-space: nowrap; }
-    .tag.bullish { background: rgba(0, 200, 120, 0.12); border-color: rgba(0, 200, 120, 0.35); }
-    .tag.bearish { background: rgba(255, 70, 70, 0.12); border-color: rgba(255, 70, 70, 0.35); }
-    .tag.oversold { background: rgba(90, 160, 255, 0.12); border-color: rgba(90, 160, 255, 0.35); }
-    .tag.overbought { background: rgba(255, 170, 70, 0.12); border-color: rgba(255, 170, 70, 0.35); }
-    .tag.neutral { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+    .tag,
+    .sig,
+    .action-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.14);
+      white-space: nowrap;
+    }
 
-    /* NEW: action / stage analysis summary tag styles */
-    .tag.buy  { background: rgba(0, 200, 120, 0.14); border-color: rgba(0, 200, 120, 0.45); }
-    .tag.sell { background: rgba(255, 70, 70, 0.14); border-color: rgba(255, 70, 70, 0.45); }
-    .tag.hold { background: rgba(255, 170, 70, 0.14); border-color: rgba(255, 170, 70, 0.45); }
+    .tag.bullish { background: rgba(55, 214, 122, 0.15); border-color: rgba(55, 214, 122, 0.45); }
+    .tag.bearish { background: rgba(255, 107, 107, 0.15); border-color: rgba(255, 107, 107, 0.45); }
+    .tag.oversold { background: rgba(79, 140, 255, 0.15); border-color: rgba(79, 140, 255, 0.45); }
+    .tag.overbought { background: rgba(255, 178, 89, 0.15); border-color: rgba(255, 178, 89, 0.45); }
+    .tag.neutral { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.22); }
 
-    /* NEW: signal pills (individual) */
     .signals { display: flex; gap: 6px; flex-wrap: wrap; }
-    .sig { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(255,255,255,0.12); white-space: nowrap; }
-    .sig.bullish { background: rgba(0, 200, 120, 0.10); border-color: rgba(0, 200, 120, 0.30); }
-    .sig.bearish { background: rgba(255, 70, 70, 0.10); border-color: rgba(255, 70, 70, 0.30); }
-    .sig.oversold { background: rgba(90, 160, 255, 0.10); border-color: rgba(90, 160, 255, 0.30); }
-    .sig.overbought { background: rgba(255, 170, 70, 0.10); border-color: rgba(255, 170, 70, 0.30); }
-    .sig.breakout { background: rgba(190, 120, 255, 0.10); border-color: rgba(190, 120, 255, 0.30); }
-    .sig.momentum { background: rgba(90, 160, 255, 0.10); border-color: rgba(90, 160, 255, 0.30); }
-    .sig.high-volume { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.20); }
-    .sig.macd-bullish { background: rgba(0, 200, 120, 0.08); border-color: rgba(0, 200, 120, 0.25); }
-    .sig.macd-bearish { background: rgba(255, 70, 70, 0.08); border-color: rgba(255, 70, 70, 0.25); }
+    .sig.momentum { background: rgba(79, 140, 255, 0.16); border-color: rgba(79, 140, 255, 0.45); }
+    .sig.macd-bullish { background: rgba(55, 214, 122, 0.16); border-color: rgba(55, 214, 122, 0.45); }
+    .sig.macd-bearish { background: rgba(255, 107, 107, 0.16); border-color: rgba(255, 107, 107, 0.45); }
+    .sig.bullish { background: rgba(55, 214, 122, 0.14); border-color: rgba(55, 214, 122, 0.35); }
+    .sig.bearish { background: rgba(255, 107, 107, 0.14); border-color: rgba(255, 107, 107, 0.35); }
+    .sig.oversold { background: rgba(79, 140, 255, 0.14); border-color: rgba(79, 140, 255, 0.35); }
+    .sig.overbought { background: rgba(255, 178, 89, 0.14); border-color: rgba(255, 178, 89, 0.35); }
+    .sig.breakout { background: rgba(173, 121, 255, 0.14); border-color: rgba(173, 121, 255, 0.35); }
+    .sig.high-volume { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.24); }
 
-    footer { font-size: 12px; color: #7d8496; text-align: center; padding: 20px 16px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 26px; }
-    a { color: #a8c7ff; }
-    .small { font-size: 12px; color: #aab0bf; }
+    .action-pill { font-weight: 700; }
+    .action-pill.sell { background: rgba(255, 107, 107, 0.2); border-color: rgba(255, 107, 107, 0.55); color: #ffd4d4; }
+    .action-pill.buy { background: rgba(55, 214, 122, 0.18); border-color: rgba(55, 214, 122, 0.5); color: #d0ffe4; }
+    .action-pill.hold { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.25); color: #dce6f9; }
+
+    footer {
+      font-size: 12px;
+      color: #7d8ca4;
+      text-align: center;
+      padding: 18px 16px 6px;
+    }
+
+    a { color: #9fc0ff; }
+
+    @media (max-width: 980px) {
+      .stats { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .header { flex-direction: column; }
+      .controls { flex-direction: column; align-items: stretch; }
+      .search-wrap { margin-left: 0; min-width: 0; width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Trade Scanner</h1>
-    <div class="small">Loads <code>docs/stocks.json</code> generated by <code>build_pages.py</code>.</div>
-    <div class="meta">
-      <div class="pill">Updated: <span id="updated">—</span></div>
-      <div class="pill">Count: <span id="count">—</span></div>
-      <div class="pill">Source: <a id="sourceLink" href="stocks.json">stocks.json</a></div>
-    </div>
-  </header>
+  <div class="app">
+    <header class="header panel">
+      <div>
+        <h1>Trade Scanner</h1>
+        <div class="subtitle">Real-time technical signal scanner</div>
+      </div>
+      <div class="last-updated">Last updated: <span id="updated">—</span></div>
+    </header>
 
-  <main>
+    <section class="stats" aria-label="Summary statistics">
+      <article class="stat-card panel">
+        <div class="stat-label">Total</div>
+        <div class="stat-value blue" id="stat-total">0</div>
+      </article>
+      <article class="stat-card panel">
+        <div class="stat-label">Bullish</div>
+        <div class="stat-value green" id="stat-bullish">0</div>
+      </article>
+      <article class="stat-card panel">
+        <div class="stat-label">Bearish</div>
+        <div class="stat-value red" id="stat-bearish">0</div>
+      </article>
+      <article class="stat-card panel">
+        <div class="stat-label">Oversold</div>
+        <div class="stat-value orange" id="stat-oversold">0</div>
+      </article>
+      <article class="stat-card panel">
+        <div class="stat-label">Overbought</div>
+        <div class="stat-value purple" id="stat-overbought">0</div>
+      </article>
+    </section>
+
+    <section class="controls panel" aria-label="Table filters">
+      <div class="filter-pills" id="filters">
+        <button type="button" class="pill active" data-filter="all">All</button>
+        <button type="button" class="pill" data-filter="bullish">Bullish</button>
+        <button type="button" class="pill" data-filter="bearish">Bearish</button>
+        <button type="button" class="pill" data-filter="oversold">Oversold</button>
+        <button type="button" class="pill" data-filter="overbought">Overbought</button>
+        <button type="button" class="pill" data-filter="neutral">Neutral</button>
+      </div>
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search symbol / name..." aria-label="Search symbol or company name" />
+      </div>
+    </section>
+
     <div id="error" class="error"></div>
 
-    <table id="table" aria-label="Scanner results" style="display:none">
-      <thead>
-        <tr>
-          <th>Symbol</th>
-          <th>Name</th>
-          <th class="right">Price</th>
-          <th class="right">Change %</th>
-          <th class="right">RSI</th>
-          <th>Stage</th>
-          <th>Stage Analysis Summary</th>
-          <th>Signals</th>
-          <th>Type</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </main>
+    <main class="table-wrap panel">
+      <table id="table" aria-label="Scanner results" style="display:none">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th class="right">Price</th>
+            <th class="right">Change %</th>
+            <th class="right">RSI</th>
+            <th class="right">MACD Hist</th>
+            <th>Stage</th>
+            <th>Signals</th>
+            <th>Type</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </main>
 
-  <footer>
-    Disclaimer: This website is for entertainment purposes only and is not financial advice.
-  </footer>
+    <footer>
+      Disclaimer: This website is for entertainment purposes only and is not financial advice.
+      Data source file: <a id="sourceLink" href="stocks.json">stocks.json</a>
+    </footer>
+  </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
+
+    const state = {
+      stocks: [],
+      activeFilter: "all",
+      search: "",
+    };
 
     function fmtNum(x, digits = 2) {
       if (x === null || x === undefined || Number.isNaN(x)) return "—";
@@ -97,8 +361,16 @@
     function fmtPct(x, digits = 2) {
       if (x === null || x === undefined || Number.isNaN(x)) return "—";
       const n = Number(x);
-      const s = (n >= 0 ? "+" : "") + n.toFixed(digits) + "%";
-      return s;
+      return (n >= 0 ? "+" : "") + n.toFixed(digits) + "%";
+    }
+
+    function esc(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
 
     function showError(msg) {
@@ -107,30 +379,134 @@
       el.textContent = msg;
     }
 
-    function tagClass(signalType) {
-      const t = (signalType || "neutral").toLowerCase();
-      if (["bullish","bearish","oversold","overbought","neutral"].includes(t)) return t;
+    function normalizeType(signalType) {
+      const t = String(signalType || "neutral").toLowerCase();
+      if (["bullish", "bearish", "oversold", "overbought", "neutral"].includes(t)) return t;
       return "neutral";
     }
 
-    // NEW: convert a signal label to a CSS-friendly class
     function sigClass(label) {
       const s = String(label || "").trim().toLowerCase();
       if (!s) return "neutral";
-      // map common multi-word signals to stable classes
       if (s === "macd bullish") return "macd-bullish";
       if (s === "macd bearish") return "macd-bearish";
       if (s === "high volume") return "high-volume";
-      return s.replace(/\s+/g, "-"); // "Stage 2" => "stage-2" (safe fallback)
+      return s.replace(/\s+/g, "-");
     }
 
-    // NEW: style BUY/HOLD/SELL
     function actionClass(action) {
       const a = String(action || "").trim().toLowerCase();
       if (a === "buy") return "buy";
       if (a === "sell") return "sell";
-      if (a === "hold") return "hold";
-      return "neutral";
+      return "hold";
+    }
+
+    function updateStats(stocks) {
+      const counts = {
+        total: stocks.length,
+        bullish: 0,
+        bearish: 0,
+        oversold: 0,
+        overbought: 0,
+      };
+
+      for (const row of stocks) {
+        const t = normalizeType(row.signal_type);
+        if (t in counts) counts[t] += 1;
+      }
+
+      $("stat-total").textContent = String(counts.total);
+      $("stat-bullish").textContent = String(counts.bullish);
+      $("stat-bearish").textContent = String(counts.bearish);
+      $("stat-oversold").textContent = String(counts.oversold);
+      $("stat-overbought").textContent = String(counts.overbought);
+    }
+
+    function rowMatches(row) {
+      const type = normalizeType(row.signal_type);
+      if (state.activeFilter !== "all" && type !== state.activeFilter) return false;
+
+      const q = state.search.trim().toLowerCase();
+      if (!q) return true;
+
+      const symbol = String(row.symbol || "").toLowerCase();
+      const name = String(row.name || "").toLowerCase();
+      return symbol.includes(q) || name.includes(q);
+    }
+
+    function renderRows() {
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      const filtered = state.stocks.filter(rowMatches);
+      if (!filtered.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="10">No matching results.</td>`;
+        tbody.appendChild(tr);
+        $("table").style.display = "table";
+        return;
+      }
+
+      for (const row of filtered) {
+        const sym = esc(row.symbol ?? "");
+        const name = esc(row.name ?? "");
+        const price = fmtNum(row.price, 2);
+        const chgRaw = Number(row.change_pct);
+        const chg = fmtPct(row.change_pct, 2);
+        const rsi = fmtNum(row.rsi, 2);
+        const macdHistRaw = Number(row.macd_histogram);
+        const macdHist = fmtNum(row.macd_histogram, 2);
+        const stage = esc(row.stage_classification ?? "—");
+
+        const type = normalizeType(row.signal_type);
+        const action = String(row.action_signal ?? row.position ?? row.stage_analysis_summary ?? "HOLD").toUpperCase();
+        const actionCls = actionClass(action);
+
+        const sigs = Array.isArray(row.signals) ? row.signals : [];
+        const sigHtml = sigs.length
+          ? `<div class="signals">${sigs.map(s => `<span class="sig ${sigClass(s)}">${esc(s)}</span>`).join("")}</div>`
+          : "—";
+
+        const chgClass = Number.isNaN(chgRaw) ? "" : (chgRaw >= 0 ? "positive" : "negative");
+        const macdClass = Number.isNaN(macdHistRaw) ? "" : (macdHistRaw >= 0 ? "positive" : "negative");
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${sym}</strong></td>
+          <td>${name}</td>
+          <td class="right">${price}</td>
+          <td class="right ${chgClass}">${chg}</td>
+          <td class="right">${rsi}</td>
+          <td class="right ${macdClass}">${macdHist}</td>
+          <td>${stage}</td>
+          <td>${sigHtml}</td>
+          <td><span class="tag ${type}">${esc(type)}</span></td>
+          <td><span class="action-pill ${actionCls}">${esc(action)}</span></td>
+        `;
+
+        tbody.appendChild(tr);
+      }
+
+      $("table").style.display = "table";
+    }
+
+    function setupControls() {
+      const filterRoot = $("filters");
+      filterRoot.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-filter]");
+        if (!button) return;
+
+        state.activeFilter = button.dataset.filter || "all";
+        for (const pill of filterRoot.querySelectorAll(".pill")) {
+          pill.classList.toggle("active", pill === button);
+        }
+        renderRows();
+      });
+
+      $("search").addEventListener("input", (event) => {
+        state.search = event.target.value || "";
+        renderRows();
+      });
     }
 
     async function load() {
@@ -141,57 +517,15 @@
         const data = await res.json();
 
         $("updated").textContent = data.updated || "—";
-        $("count").textContent = (data.count ?? data.stocks?.length ?? "—").toString();
 
-        const stocks = Array.isArray(data.stocks) ? data.stocks : [];
-        if (!stocks.length) {
+        state.stocks = Array.isArray(data.stocks) ? data.stocks : [];
+        if (!state.stocks.length) {
           showError("stocks.json loaded successfully, but it contains no stock rows. Run build_pages.py and commit docs/stocks.json.");
           return;
         }
 
-        const tbody = $("tbody");
-        tbody.innerHTML = "";
-
-        for (const row of stocks) {
-          const tr = document.createElement("tr");
-
-          const sym = row.symbol ?? "";
-          const name = row.name ?? "";
-
-          const price = fmtNum(row.price, 2);
-          const chg = fmtPct(row.change_pct, 2);
-          const rsi = fmtNum(row.rsi, 2);
-          const stage = row.stage_classification ?? "—";
-
-          const type = row.signal_type ?? "neutral";
-          const action = row.action_signal ?? row.position ?? row.stage_analysis_summary ?? "—";
-
-          // NEW: stage analysis summary (prefer dedicated key if present)
-          const stageSummary = row.stage_analysis_summary ?? row.action_signal ?? row.position ?? "—";
-
-          // NEW: render each signal as a pill (fallback to old comma-separated string)
-          const sigs = Array.isArray(row.signals) ? row.signals : [];
-          const sigHtml = sigs.length
-            ? `<div class="signals">${sigs.map(s => `<span class="sig ${sigClass(s)}">${s}</span>`).join("")}</div>`
-            : (row.signals ? String(row.signals) : "—");
-
-          tr.innerHTML = `
-            <td><strong>${sym}</strong></td>
-            <td>${name}</td>
-            <td class="right">${price}</td>
-            <td class="right">${chg}</td>
-            <td class="right">${rsi}</td>
-            <td>${stage}</td>
-            <td><span class="tag ${actionClass(stageSummary)}">${stageSummary}</span></td>
-            <td>${sigHtml}</td>
-            <td><span class="tag ${tagClass(type)}">${type}</span></td>
-            <td><span class="tag ${actionClass(action)}">${action}</span></td>
-          `;
-
-          tbody.appendChild(tr);
-        }
-
-        $("table").style.display = "table";
+        updateStats(state.stocks);
+        renderRows();
       } catch (err) {
         showError(
           "Failed to load stocks.json. " +
@@ -201,6 +535,7 @@
       }
     }
 
+    setupControls();
     load();
   </script>
 </body>
