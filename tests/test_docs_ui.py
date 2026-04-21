@@ -15,6 +15,9 @@ class TestDocsUiFeatures(unittest.TestCase):
         self.assertIn('id="sort-column"', self.html)
         self.assertIn('id="sort-direction"', self.html)
         self.assertIn('data-sort-key="symbol"', self.html)
+        self.assertIn('data-sort-key="date"', self.html)
+        self.assertIn('data-sort-key="sma150"', self.html)
+        self.assertIn('data-sort-key="volume_10week_ma"', self.html)
         self.assertIn('data-sort-key="action_signal"', self.html)
 
     def test_export_controls_present(self) -> None:
@@ -26,6 +29,9 @@ class TestDocsUiFeatures(unittest.TestCase):
         self.assertIn("function exportCsv()", self.html)
         self.assertIn("function exportXlsx()", self.html)
         self.assertIn("function makeXlsxBytes(aoa)", self.html)
+        self.assertIn('label: "Date"', self.html)
+        self.assertIn('label: "150-Day SMA"', self.html)
+        self.assertIn('label: "10 Week MA (Vol)"', self.html)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,25 @@ logging.basicConfig(
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "docs")
 
 
+def _date_from_updated(updated: str) -> str | None:
+    if not updated:
+        return None
+    return str(updated).split("T", 1)[0]
+
+
+def _ensure_row_dates(payload: dict) -> None:
+    fallback_date = _date_from_updated(str(payload.get("updated", "")))
+    stocks = payload.get("stocks")
+    if not isinstance(stocks, list):
+        return
+    for row in stocks:
+        if not isinstance(row, dict):
+            continue
+        if row.get("date"):
+            continue
+        row["date"] = fallback_date
+
+
 def main(symbols: list[str] | None = None) -> None:
     os.makedirs(DOCS_DIR, exist_ok=True)
 
@@ -78,6 +97,7 @@ def main(symbols: list[str] | None = None) -> None:
             )
 
     with open(out_path, "w", encoding="utf-8") as fh:
+        _ensure_row_dates(payload)
         json.dump(payload, fh, indent=2)
 
     print(f"Output written to {out_path}")

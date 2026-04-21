@@ -31,6 +31,7 @@ def _make_df(close_values, n_extra=10):
             "Volume": [1_000_000] * size,
         }
     )
+    df.index = pd.date_range("2025-01-01", periods=size, freq="B")
     return df
 
 
@@ -152,11 +153,12 @@ class TestScanSymbol(unittest.TestCase):
         result = scan_symbol("TEST")
 
         self.assertIsNotNone(result)
-        for key in ("symbol", "name", "price", "change_pct", "rsi", "sma20",
+        for key in ("symbol", "name", "date", "price", "change_pct", "rsi", "sma20",
                     "sma50", "sma150", "slope_sma150", "stage_classification",
                     "confirms_stage2_volume", "action_signal", "volume_10week_ma",
                     "signals", "signal_type"):
             self.assertIn(key, result)
+        self.assertRegex(result["date"], r"^\d{4}-\d{2}-\d{2}$")
 
     @patch("scanner.scanner.fetch_info", return_value={})
     @patch("scanner.scanner.fetch_history")
