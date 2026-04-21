@@ -19,8 +19,18 @@ DEFAULT_SYMBOLS = [
 
 def fetch_history(symbol, period='1y'):
     try:
-        data = yf.download(symbol, period=period)
-        result = data[['Open', 'High', 'Low', 'Close', 'Volume']].reset_index(drop=True)
+        data = yf.download(symbol, period=period, progress=False)
+        if data.empty:
+            return pd.DataFrame()
+
+        if isinstance(data.columns, pd.MultiIndex):
+            symbols = data.columns.get_level_values(-1)
+            if symbol in symbols:
+                data = data.xs(symbol, axis=1, level=-1, drop_level=True)
+            else:
+                data = data.droplevel(-1, axis=1)
+
+        result = data[['Open', 'High', 'Low', 'Close', 'Volume']]
         return result
     except Exception:
         return pd.DataFrame()  # return empty DataFrame on failure
