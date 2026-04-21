@@ -38,13 +38,28 @@ def main(symbols: list[str] | None = None) -> None:
     stocks = scan_stocks(symbols)
     print(f"Done — {len(stocks)} result(s) written.")
 
+    out_path = os.path.join(DOCS_DIR, "stocks.json")
+
     payload = {
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "count": len(stocks),
         "stocks": stocks,
     }
 
-    out_path = os.path.join(DOCS_DIR, "stocks.json")
+    if not stocks and os.path.exists(out_path):
+        try:
+            with open(out_path, "r", encoding="utf-8") as fh:
+                existing = json.load(fh)
+            existing_stocks = existing.get("stocks")
+            if isinstance(existing_stocks, list) and existing_stocks:
+                logging.warning(
+                    "No fresh stock data fetched; preserving existing docs/stocks.json with %d stock(s).",
+                    len(existing_stocks),
+                )
+                payload = existing
+        except (OSError, json.JSONDecodeError):
+            pass
+
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
 
