@@ -4,9 +4,10 @@ A Python-powered technical stock scanner with a static GitHub Pages UI.
 
 ## Features
 
-- Scans a curated universe of large-cap US stocks
+- Scans a curated universe of large-cap US stocks plus data center infrastructure stocks
 - Computes RSI, SMA (20/50), EMA (9), MACD, ATR, and volume ratio
 - Classifies each stock as **Bullish**, **Bearish**, **Oversold**, **Overbought**, **Momentum**, **Breakout**, or **High Volume**
+- Tracks insider net buying and selling activity per stock
 - Outputs a static `docs/stocks.json` consumed by a dark-themed responsive web UI
 - Web UI supports table sorting (header click + sort dropdowns) and export of current view to CSV/XLSX
 - Deployable to GitHub Pages with a single command
@@ -45,6 +46,23 @@ python build_pages.py AAPL MSFT TSLA NVDA
 python -m unittest discover -s tests -v
 ```
 
+## Supported Stock Categories
+
+### Data Center & Infrastructure Stocks
+
+The scanner now includes major data center REITs and infrastructure operators:
+
+- **DLR** — Digital Realty Trust
+- **EQIX** — Equinix
+- **CTRE** — CyrusOne
+- **QTS** — QTS Realty Trust
+- **PGRE** — Paramount Group
+- **CCI** — Crown Castle International
+- **SBAC** — SBA Communications
+- **AMT** — American Tower
+- **PLD** — Prologis
+- **REXR** — Rexford Industrial Realty
+
 ## Project structure
 
 ```
@@ -52,9 +70,9 @@ python -m unittest discover -s tests -v
 ├── requirements.txt
 ├── scanner/
 │   ├── __init__.py
-│   ├── data.py         # symbol list + yfinance fetching
+│   ├── data.py         # symbol list + yfinance fetching + insider data fetching
 │   ├── indicators.py   # RSI, SMA, EMA, MACD, ATR, volume ratio
-│   └── scanner.py      # scan logic + signal classification
+│   └── scanner.py      # scan logic + signal classification + insider metrics
 ├── docs/
 │   ├── index.html      # static UI (loads stocks.json via fetch)
 │   └── stocks.json     # generated — commit after running build_pages.py
@@ -62,3 +80,13 @@ python -m unittest discover -s tests -v
     ├── test_indicators.py
     └── test_scanner.py
 ```
+
+## Output Fields
+
+Each stock in `stocks.json` includes:
+
+- **Price & Volume**: `price`, `change`, `change_pct`, `volume`, `avg_volume`, `volume_ratio`
+- **Technical Indicators**: `rsi`, `sma20`, `sma50`, `sma150`, `ema9`, `macd`, `atr`
+- **Stage Analysis**: `stage_classification`, `confirms_stage2_volume`, `action_signal`
+- **Insider Activity**: `insider_net_buying`, `insider_net_selling`, `insider_net`
+- **Signals**: `signals`, `signal_type`

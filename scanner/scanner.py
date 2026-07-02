@@ -10,7 +10,7 @@ import logging
 import math
 from typing import Any
 
-from .data import DEFAULT_SYMBOLS, fetch_history, fetch_info
+from .data import DEFAULT_SYMBOLS, fetch_history, fetch_info, fetch_insider_data
 from .indicators import atr, ema, macd, rsi, slope_sma150, sma, volume_ratio
 
 logger = logging.getLogger(__name__)
@@ -186,6 +186,9 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
     info = fetch_info(symbol)
     name = info.get("shortName") or info.get("longName") or symbol
 
+    # Fetch insider trading data
+    insider_data = fetch_insider_data(symbol)
+
     def _safe(value: float) -> float | None:
         return None if math.isnan(value) else round(value, 4)
 
@@ -215,6 +218,9 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
         "action_signal": action_signal,
         "stage_analysis_summary": action_signal,
         "position": action_signal,
+        "insider_net_buying": insider_data["insider_net_buying"],
+        "insider_net_selling": insider_data["insider_net_selling"],
+        "insider_net": insider_data["insider_net"],
         "signals": signals,
         "signal_type": signal_type,
     }
