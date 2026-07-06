@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-05T07:05:00Z",
+  "updated": "2026-07-06T07:29:54Z",
   "count": 75,
   "stocks": [
     {
@@ -1742,7 +1742,7 @@
     },
     {
       "symbol": "XOM",
-      "name": "Exxon Mobil Corporation",
+      "name": "ExxonMobil Holdings Corporation",
       "date": "2026-07-02",
       "price": 137.09,
       "change": 0.81,
