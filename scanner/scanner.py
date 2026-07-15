@@ -137,8 +137,14 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
     low = df["Low"]
     volume = df["Volume"]
 
-    price = _scalar_at(close, -1)
-    prev_close = _scalar_at(close, -2) if len(close) >= 2 else price
+    # Use last non-NaN close for displayed price and change calculations.
+    valid_close = close.dropna()
+    if valid_close.shape[0] == 0:
+        logger.warning("Skipping %s — no valid close prices", symbol)
+        return None
+
+    price = float(valid_close.iloc[-1])
+    prev_close = float(valid_close.iloc[-2]) if valid_close.shape[0] >= 2 else price
     change = price - prev_close
     change_pct = (change / prev_close * 100) if prev_close != 0 else 0.0
 
@@ -153,7 +159,9 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
     atr_val = atr(high, low, close)
     volume_10week_ma_val = sma(volume, 50)
 
-    current_volume = int(_scalar_at(volume, -1))
+    # current_volume: prefer last non-NaN volume
+    valid_volume = volume.dropna()
+    current_volume = int(valid_volume.iloc[-1]) if valid_volume.shape[0] > 0 else 0
     avg_volume = int(volume.shift(1).rolling(window=20).mean().iloc[-1]) if len(volume) >= 21 else current_volume
     stage_classification = _classify_stage(price, sma150_val, slope_sma150_val)
     confirms_stage2_volume = _classify_stage2_volume_confirmation(
