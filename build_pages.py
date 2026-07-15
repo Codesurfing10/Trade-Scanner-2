@@ -18,7 +18,7 @@ import math
 from datetime import datetime, timezone
 
 from scanner import scan_stocks
-from scanner.data import DEFAULT_SYMBOLS, fetch_info
+from scanner.data import DEFAULT_SYMBOLS, fetch_info, fetch_history
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,15 +114,70 @@ def main(symbols: list[str] | None = None) -> None:
         except Exception:
             info = {}
         name = info.get("shortName") or info.get("longName") or sym
+
+        # Best-effort: try short history to populate price/date/change/volume
+        price = None
+        change = None
+        change_pct = None
+        row_date = None
+        volume = None
+        avg_volume = None
+        try:
+            hist = fetch_history(sym, period="5d")
+            if hist is not None and not hist.empty and "Close" in hist.columns:
+                closes = hist["Close"].dropna()
+                if len(closes) >= 1:
+                    last = float(closes.iloc[-1])
+                    price = round(last, 2)
+                    idx = hist.index[-1]
+                    if hasattr(idx, "strftime"):
+                        row_date = idx.strftime("%Y-%m-%d")
+                    if len(closes) >= 2:
+                        prev = float(closes.iloc[-2])
+                        change = round(last - prev, 2)
+                        change_pct = round((change / prev * 100) if prev != 0 else 0.0, 2)
+            if hist is not None and not hist.empty and "Volume" in hist.columns:
+                vols = hist["Volume"].dropna()
+                if len(vols) >= 1:
+                    volume = int(vols.iloc[-1])
+                    try:
+                        avg_volume = int(vols.mean())
+                    except Exception:
+                        avg_volume = None
+        except Exception:
+            # ignore history fetch errors and fall back to fetch_info
+            pass
+
+        # Fallback: try fetch_info for market price/previous close
+        try:
+            info2 = fetch_info(sym) or {}
+            candidate = (
+                info2.get("regularMarketPrice")
+                or info2.get("currentPrice")
+                or info2.get("previousClose")
+            )
+            if candidate is not None and price is None:
+                p = float(candidate)
+                price = round(p, 2)
+                prev = info2.get("previousClose")
+                if prev is not None:
+                    prev = float(prev)
+                    change = round(price - prev, 2)
+                    change_pct = round((change / prev * 100) if prev != 0 else 0.0, 2)
+            # prefer name from info2 if available
+            name = info2.get("shortName") or info2.get("longName") or name
+        except Exception:
+            pass
+
         stocks.append({
             "symbol": sym,
             "name": name,
-            "date": None,
-            "price": None,
-            "change": None,
-            "change_pct": None,
-            "volume": None,
-            "avg_volume": None,
+            "date": row_date,
+            "price": price,
+            "change": change,
+            "change_pct": change_pct,
+            "volume": volume,
+            "avg_volume": avg_volume,
             "insider_net": None,
             "insider_sentiment": "N/A",
             "volume_ratio": None,
