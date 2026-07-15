@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timezone
 
 from scanner import scan_stocks
-from scanner.data import DEFAULT_SYMBOLS
+from scanner.data import DEFAULT_SYMBOLS, fetch_info
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,7 +55,54 @@ def main(symbols: list[str] | None = None) -> None:
 
     print(f"Scanning {len(symbols)} symbols …")
     stocks = scan_stocks(symbols)
-    print(f"Done — {len(stocks)} result(s) written.")
+    print(f"Done — {len(stocks)} result(s) returned by scanner.")
+
+    # Ensure every default symbol appears in the output (fallback placeholders)
+    existing = {row.get("symbol") for row in stocks if isinstance(row, dict) and row.get("symbol")}
+    added = 0
+    for sym in DEFAULT_SYMBOLS:
+        if sym in existing:
+            continue
+        try:
+            info = fetch_info(sym)
+        except Exception:
+            info = {}
+        name = info.get("shortName") or info.get("longName") or sym
+        stocks.append({
+            "symbol": sym,
+            "name": name,
+            "date": None,
+            "price": None,
+            "change": None,
+            "change_pct": None,
+            "volume": None,
+            "avg_volume": None,
+            "insider_net": None,
+            "insider_sentiment": "N/A",
+            "volume_ratio": None,
+            "rsi": None,
+            "sma20": None,
+            "sma50": None,
+            "sma150": None,
+            "slope_sma150": None,
+            "ema9": None,
+            "macd": None,
+            "macd_signal": None,
+            "macd_histogram": None,
+            "atr": None,
+            "volume_10week_ma": None,
+            "stage_classification": "N/A",
+            "confirms_stage2_volume": "N/A",
+            "action_signal": "HOLD",
+            "stage_analysis_summary": "HOLD",
+            "position": "HOLD",
+            "signals": [],
+            "signal_type": "neutral",
+        })
+        added += 1
+
+    if added:
+        logging.info("Added %d placeholder stock(s) for missing DEFAULT_SYMBOLS.", added)
 
     out_path = os.path.join(DOCS_DIR, "stocks.json")
 
