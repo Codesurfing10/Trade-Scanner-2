@@ -376,6 +376,8 @@
             <option value="slope_sma150">Slope SMA150</option>
             <option value="volume">Daily Volume</option>
             <option value="volume_10week_ma">10 Week MA (Vol)</option>
+            <option value="insider_net">Insider Net</option>
+            <option value="insider_sentiment">Insider Sentiment</option>
             <option value="confirms_stage2_volume">Confirms Stage 2 with Expanding Volume</option>
             <option value="stage_classification">Stage</option>
             <option value="signals">Signals</option>
@@ -411,6 +413,8 @@
             <th class="right sortable" data-sort-key="slope_sma150" aria-sort="none">Slope SMA150 <span class="sort-arrow"></span></th>
             <th class="right sortable" data-sort-key="volume" aria-sort="none">Daily Volume <span class="sort-arrow"></span></th>
             <th class="right sortable" data-sort-key="volume_10week_ma" aria-sort="none">10 Week MA (Vol) <span class="sort-arrow"></span></th>
+            <th class="right sortable" data-sort-key="insider_net" aria-sort="none">Insider Net <span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort-key="insider_sentiment" aria-sort="none">Insider Sentiment <span class="sort-arrow"></span></th>
             <th class="sortable" data-sort-key="confirms_stage2_volume" aria-sort="none">Confirms Stage 2 with Expanding Volume <span class="sort-arrow"></span></th>
             <th class="sortable" data-sort-key="stage_classification" aria-sort="none">Stage <span class="sort-arrow"></span></th>
             <th class="sortable" data-sort-key="signals" aria-sort="none">Signals <span class="sort-arrow"></span></th>
@@ -439,7 +443,7 @@
       sortDir: "asc",
       updated: "—",
     };
-    const TABLE_COLUMN_COUNT = 18;
+    const TABLE_COLUMN_COUNT = 20;
     const EXPORT_COLUMNS = [
       { key: "symbol", label: "Symbol", value: (row) => String(row.symbol ?? "") },
       { key: "name", label: "Name", value: (row) => String(row.name ?? "") },
@@ -454,6 +458,8 @@
       { key: "slope_sma150", label: "Slope SMA150", value: (row) => fmtNum(row.slope_sma150, 4) },
       { key: "volume", label: "Daily Volume", value: (row) => fmtNum(row.volume, 0) },
       { key: "volume_10week_ma", label: "10 Week MA (Vol)", value: (row) => fmtNum(row.volume_10week_ma, 0) },
+      { key: "insider_net", label: "Insider Net", value: (row) => (row.insider_net === null || row.insider_net === undefined) ? "" : String(row.insider_net) },
+      { key: "insider_sentiment", label: "Insider Sentiment", value: (row) => String(row.insider_sentiment ?? "—") },
       { key: "confirms_stage2_volume", label: "Confirms Stage 2 with Expanding Volume", value: (row) => String(row.confirms_stage2_volume ?? "—") },
       { key: "stage_classification", label: "Stage", value: (row) => String(row.stage_classification ?? "—") },
       { key: "signals", label: "Signals", value: (row) => {
@@ -928,6 +934,10 @@
         const chgClass = Number.isNaN(chgRaw) ? "" : (chgRaw >= 0 ? "positive" : "negative");
         const macdClass = Number.isNaN(macdHistRaw) ? "" : (macdHistRaw >= 0 ? "positive" : "negative");
 
+        // Insider columns
+        const insiderNet = (row.insider_net === null || row.insider_net === undefined) ? "" : String(row.insider_net);
+        const insiderSentiment = esc(row.insider_sentiment ?? "—");
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td><strong>${sym}</strong></td>
@@ -943,6 +953,8 @@
           <td class="right">${slope150}</td>
           <td class="right">${dailyVolume}</td>
           <td class="right">${vol10w}</td>
+          <td class="right">${insiderNet}</td>
+          <td>${insiderSentiment}</td>
           <td>${confirmsStage2}</td>
           <td>${stage}</td>
           <td>${sigHtml}</td>
@@ -998,37 +1010,3 @@
     }
 
     async function load() {
-      const url = "stocks.json";
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
-        const data = await res.json();
-
-        state.updated = data.updated || "—";
-        $("updated").textContent = state.updated;
-
-        state.stocks = Array.isArray(data.stocks) ? data.stocks : [];
-        if (!state.stocks.length) {
-          showError("stocks.json loaded successfully, but it contains no stock rows. Run build_pages.py and commit docs/stocks.json.");
-          return;
-        }
-
-        updateStats(state.stocks);
-        $("sort-column").value = state.sortKey;
-        $("sort-direction").value = state.sortDir;
-        updateSortIndicators();
-        renderRows();
-      } catch (err) {
-        showError(
-          "Failed to load stocks.json. " +
-          "If you see this on GitHub Pages, confirm docs/stocks.json exists in the deployed artifact and that index.html is served from /docs.\n\n" +
-          String(err)
-        );
-      }
-    }
-
-    setupControls();
-    load();
-  </script>
-</body>
-</html>
