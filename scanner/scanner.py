@@ -10,7 +10,7 @@ import logging
 import math
 from typing import Any
 
-from .data import DEFAULT_SYMBOLS, fetch_history, fetch_info
+from .data import DEFAULT_SYMBOLS, fetch_history, fetch_info, fetch_insider_net
 from .indicators import atr, ema, macd, rsi, slope_sma150, sma, volume_ratio
 
 logger = logging.getLogger(__name__)
@@ -186,6 +186,17 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
     info = fetch_info(symbol)
     name = info.get("shortName") or info.get("longName") or symbol
 
+    # Insider transactions (best-effort)
+    insider_net = fetch_insider_net(symbol)
+    if insider_net is None:
+        insider_sentiment = "N/A"
+    elif insider_net > 0:
+        insider_sentiment = "Net Buy"
+    elif insider_net < 0:
+        insider_sentiment = "Net Sell"
+    else:
+        insider_sentiment = "Neutral"
+
     def _safe(value: float) -> float | None:
         return None if math.isnan(value) else round(value, 4)
 
@@ -198,6 +209,8 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
         "change_pct": round(change_pct, 2),
         "volume": current_volume,
         "avg_volume": avg_volume,
+        "insider_net": int(insider_net) if insider_net is not None else None,
+        "insider_sentiment": insider_sentiment,
         "volume_ratio": _safe(vol_ratio),
         "rsi": _safe(rsi_val),
         "sma20": _safe(sma20_val),
@@ -223,6 +236,7 @@ def scan_symbol(symbol: str) -> dict[str, Any] | None:
 # ---------------------------------------------------------------------------
 # Multi-symbol scanner
 # ---------------------------------------------------------------------------
+
 
 def scan_stocks(symbols: list[str] | None = None) -> list[dict[str, Any]]:
     """Scan all *symbols* and return a list of result dicts.
