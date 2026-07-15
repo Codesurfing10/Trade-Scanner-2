@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import math
 from datetime import datetime, timezone
 
 from scanner import scan_stocks
@@ -45,6 +46,51 @@ def _ensure_row_dates(payload: dict) -> None:
         if row.get("date"):
             continue
         row["date"] = fallback_date
+
+
+def _sanitize(obj):
+    """Recursively replace NaN/Inf and non-JSON scalars with None or native Python types.
+
+    This ensures json.dump emits valid JSON (no bare NaN/Infinity tokens).
+    """
+    # dict
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    # list/tuple
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    # numpy scalars or objects with .item()
+    try:
+        if hasattr(obj, "item") and not isinstance(obj, (str, bytes, bytearray)):
+            return _sanitize(obj.item())
+    except Exception:
+        pass
+    # numbers: guard against NaN/Inf
+    try:
+        if isinstance(obj, (int, bool)):
+            return obj
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+            return obj
+        # last-resort check: math.isnan will raise TypeError for non-numeric values
+        if isinstance(obj, (str,)):
+            return obj
+        try:
+            if math.isnan(obj):
+                return None
+        except Exception:
+            pass
+    except Exception:
+        pass
+    # everything else: keep as-is (json.dump will convert most primitives), but coerce to str for unknown types
+    if obj is None:
+        return None
+    # final fallback: convert to native python scalar if possible
+    try:
+        return float(obj) if isinstance(obj, (int, float)) else str(obj)
+    except Exception:
+        return str(obj)
 
 
 def main(symbols: list[str] | None = None) -> None:
@@ -112,6 +158,9 @@ def main(symbols: list[str] | None = None) -> None:
         "stocks": stocks,
     }
 
+    # Sanitize payload to ensure valid JSON (replace NaN/Infinity with null, coerce numpy types)
+    safe_payload = _sanitize(payload)
+
     if not stocks and os.path.exists(out_path):
         try:
             with open(out_path, "r", encoding="utf-8") as fh:
@@ -132,7 +181,7 @@ def main(symbols: list[str] | None = None) -> None:
                     "No fresh stock data fetched; preserving existing docs/stocks.json with %d stock(s).",
                     len(existing_stocks),
                 )
-                payload = existing
+                safe_payload = existing
             else:
                 logging.warning(
                     "No fresh stock data fetched, and existing docs/stocks.json has no valid non-empty 'stocks' list of stock objects.",
@@ -144,8 +193,8 @@ def main(symbols: list[str] | None = None) -> None:
             )
 
     with open(out_path, "w", encoding="utf-8") as fh:
-        _ensure_row_dates(payload)
-        json.dump(payload, fh, indent=2)
+        _ensure_row_dates(safe_payload)
+        json.dump(safe_payload, fh, indent=2, ensure_ascii=False)
 
     print(f"Output written to {out_path}")
 
