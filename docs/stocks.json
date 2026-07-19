@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-18T06:38:10Z",
+  "updated": "2026-07-19T06:50:08Z",
   "count": 75,
   "stocks": [
     {
@@ -1108,7 +1108,7 @@
     },
     {
       "symbol": "VZ",
-      "name": "VZ",
+      "name": "Verizon Communications Inc.",
       "date": "2026-07-17",
       "price": 43.59,
       "change": -0.29,
@@ -1462,7 +1462,7 @@
       "rsi": 51.1115,
       "sma20": 335.561,
       "sma50": 319.0946,
-      "sma150": 330.6713,
+      "sma150": 330.6714,
       "slope_sma150": 0.0122,
       "ema9": 333.9566,
       "macd": 3.6873,
@@ -2532,7 +2532,7 @@
     },
     {
       "symbol": "PYPL",
-      "name": "PYPL",
+      "name": "PayPal Holdings, Inc.",
       "date": "2026-07-17",
       "price": 56.56,
       "change": -0.17,
