@@ -1,64 +1,55 @@
-# Trade-Scanner-2
+# Trade Scanner
 
-A Python-powered technical stock scanner with a static GitHub Pages UI.
+**Client-side CSV & Excel trade blotter / OHLCV scanner.**  
+Drop a file → get buy/sell/short/cover signals, notional totals, and technical alerts.  
+No server. No API keys. Files never leave the browser.
 
 ## Features
 
-- Scans a curated universe of large-cap US stocks
-- Computes RSI, SMA (20/50), EMA (9), MACD, ATR, and volume ratio
-- Classifies each stock as **Bullish**, **Bearish**, **Oversold**, **Overbought**, **Momentum**, **Breakout**, or **High Volume**
-- Outputs a static `docs/stocks.json` consumed by a dark-themed responsive web UI
-- Web UI supports table sorting (header click + sort dropdowns) and export of current view to CSV/XLSX
-- Deployable to GitHub Pages with a single command
+- **Upload** `.csv`, `.xlsx`, `.xls`, or `.xlsm`
+- **Auto-detect columns** (Date, Symbol, Side, Qty, Price, OHLCV, Notes, …)
+- **Blotter mode** — explicit BUY / SELL / SHORT / COVER / HOLD / WATCH
+- **OHLCV mode** — RSI, 3-bar momentum, volume spikes
+- **Multi-sheet Excel** — pick which sheet to scan
+- **Fully static** — works on GitHub Pages, Netlify, S3, or `file://`
 
-## Setup
+## Quick start (GitHub Pages)
 
-```bash
-pip install -r requirements.txt
+1. Push this folder to a repo (or the `docs/` / root of an existing repo).
+2. Enable **Settings → Pages → Deploy from branch**.
+3. Open the published URL.
+
+Or open `index.html` locally in any modern browser.
+
+## Sample files
+
+| File | Description |
+|------|-------------|
+| `samples/blotter.csv` | Explicit side blotter |
+| `samples/ohlcv.csv` | SPY daily OHLCV (technical signals) |
+| `samples/trades.xlsx` | Excel workbook with both sheets |
+
+## How it works
+
+1. **CSV** → native parser in `scanner.js`
+2. **Excel** → [SheetJS](https://sheetjs.com) (CDN) converts the selected sheet to a 2-D array, then the same scan logic runs
+3. Column aliases are fuzzy-matched (e.g. `Ticker` → Symbol, `FillPrice` → Price)
+4. Side text is normalized with regex patterns
+
+## API (for embedding)
+
+```js
+// CSV text
+const result = TradeScanner.scanCsv(csvText, "myfile.csv");
+
+// 2-D array (e.g. from SheetJS)
+const result = TradeScanner.scanArray(arrayOfArrays, "myfile.xlsx");
+
+// result.summary  → buys, sells, netNotional, mode, …
+// result.signals  → array of { side, symbol, reason, strength, … }
+// result.rows     → normalized rows with detected side
 ```
 
-## Generate / refresh stock data
+## Browser support
 
-```bash
-python build_pages.py
-```
-
-This fetches the latest data for all default symbols and writes `docs/stocks.json`.
-Commit the updated file to publish fresh data to GitHub Pages.
-
-You can also scan specific symbols:
-
-```bash
-python build_pages.py AAPL MSFT TSLA NVDA
-```
-
-## GitHub Pages setup
-
-1. Push to GitHub.
-2. Go to **Settings → Pages** and set the source to **GitHub Actions**.
-3. Any push to the `main` branch automatically runs `.github/workflows/deploy-pages.yml`, rebuilds `docs/stocks.json`, and deploys the refreshed site.
-4. You can also trigger a manual refresh from the **Actions** tab with **Build & Deploy Pages**.
-
-## Running tests
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-## Project structure
-
-```
-├── build_pages.py      # CLI: fetch data → docs/stocks.json
-├── requirements.txt
-├── scanner/
-│   ├── __init__.py
-│   ├── data.py         # symbol list + yfinance fetching
-│   ├── indicators.py   # RSI, SMA, EMA, MACD, ATR, volume ratio
-│   └── scanner.py      # scan logic + signal classification
-├── docs/
-│   ├── index.html      # static UI (loads stocks.json via fetch)
-│   └── stocks.json     # generated — commit after running build_pages.py
-└── tests/
-    ├── test_indicators.py
-    └── test_scanner.py
-```
+Chrome, Firefox, Safari, Edge (modern). Requires `FileReader` + ES6.

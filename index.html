@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trade Scanner — CSV & Excel</title>
+  <meta name="description" content="Client-side trade blotter and OHLCV scanner. Upload CSV or Excel files. No server, no API keys." />
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121820;
+      --border: #1e2a36;
+      --text: #e6edf3;
+      --muted: #8b9bb0;
+      --accent: #3b82f6;
+      --buy: #22c55e;
+      --sell: #ef4444;
+      --short: #f97316;
+      --cover: #a855f7;
+      --hold: #64748b;
+      --watch: #06b6d4;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    header h1 span { color: var(--accent); }
+    .badge {
+      font-size: 0.7rem;
+      background: #1e3a5f;
+      color: #93c5fd;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    main { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+    /* Drop zone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: #0f1a28;
+    }
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .dropzone .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .dropzone p { color: var(--muted); font-size: 0.95rem; }
+    .dropzone strong { color: var(--text); }
+    .formats {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .formats code {
+      background: #1a2430;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      margin: 0 0.15rem;
+    }
+
+    /* Sheet picker (Excel) */
+    #sheetPicker {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    #sheetPicker label { color: var(--muted); font-size: 0.9rem; }
+    #sheetPicker select {
+      background: #0b0f14;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+    }
+    #sheetPicker button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Summary cards */
+    #results { display: none; margin-top: 1.75rem; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .value { font-size: 1.4rem; font-weight: 700; margin-top: 0.25rem; }
+    .card.buy .value { color: var(--buy); }
+    .card.sell .value { color: var(--sell); }
+    .card.short .value { color: var(--short); }
+    .card.cover .value { color: var(--cover); }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+    .meta strong { color: var(--text); }
+
+    /* Tables */
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    th {
+      background: #0f1520;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      position: sticky;
+      top: 0;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #0f1520; }
+
+    .side-pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .side-BUY { background: #14532d; color: #86efac; }
+    .side-SELL { background: #7f1d1d; color: #fca5a5; }
+    .side-SHORT { background: #7c2d12; color: #fdba74; }
+    .side-COVER { background: #4c1d95; color: #c4b5fd; }
+    .side-HOLD { background: #1e293b; color: #94a3b8; }
+    .side-WATCH { background: #164e63; color: #67e8f9; }
+
+    .strength-bar {
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      overflow: hidden;
+      width: 60px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 0.35rem;
+    }
+    .strength-bar > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .empty { color: var(--muted); padding: 1.5rem; text-align: center; }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    .samples {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .samples a {
+      color: var(--accent);
+      margin: 0 0.4rem;
+      text-decoration: none;
+    }
+    .samples a:hover { text-decoration: underline; }
+
+    .error {
+      background: #7f1d1d;
+      color: #fecaca;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      header, main { padding: 1rem; }
+      .dropzone { padding: 1.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Trade <span>Scanner</span></h1>
+    <span class="badge">CSV · Excel · Client-side</span>
+  </header>
+
+  <main>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".csv,.txt,.tsv,.xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" />
+      <div class="icon">📂</div>
+      <p><strong>Drop a file here</strong> or click to browse</p>
+      <div class="formats">
+        Accepts <code>.csv</code> <code>.xlsx</code> <code>.xls</code> <code>.xlsm</code>
+      </div>
+    </div>
+
+    <div class="samples">
+      Try samples:
+      <a href="samples/blotter.csv" download>blotter.csv</a>
+      <a href="samples/ohlcv.csv" download>ohlcv.csv</a>
+      <a href="samples/trades.xlsx" download>trades.xlsx</a>
+    </div>
+
+    <div id="sheetPicker">
+      <label for="sheetSelect">Sheet:</label>
+      <select id="sheetSelect"></select>
+      <button id="scanSheetBtn" type="button">Scan selected sheet</button>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+
+    <div id="results">
+      <div class="meta" id="meta"></div>
+      <div class="summary-grid" id="summary"></div>
+
+      <div class="section-title">Signals</div>
+      <div class="table-wrap">
+        <table id="signalsTable">
+          <thead>
+            <tr>
+              <th>Side</th>
+              <th>Symbol</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Reason</th>
+              <th>Strength</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="section-title">Rows</div>
+      <div class="table-wrap">
+        <table id="rowsTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Fully client-side. Files never leave your browser.
+    Powered by <a href="https://sheetjs.com" target="_blank" rel="noopener">SheetJS</a>.
+  </footer>
+
+  <!-- SheetJS (community edition) for Excel parsing -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="scanner.js"></script>
+  <script>
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const sheetPicker = document.getElementById("sheetPicker");
+    const sheetSelect = document.getElementById("sheetSelect");
+    const scanSheetBtn = document.getElementById("scanSheetBtn");
+    const errorBox = document.getElementById("errorBox");
+    const results = document.getElementById("results");
+
+    let pendingWorkbook = null;
+    let pendingFileName = "";
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+    function clearError() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function fmtNum(n) {
+      if (n == null || !Number.isFinite(n)) return "—";
+      return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    function render(result) {
+      results.style.display = "block";
+      clearError();
+
+      const s = result.summary;
+      document.getElementById("meta").innerHTML = `
+        <span><strong>File:</strong> ${escapeHtml(result.fileName)}</span>
+        <span><strong>Mode:</strong> ${s.mode}</span>
+        <span><strong>Rows:</strong> ${s.rowCount}</span>
+        <span><strong>Signals:</strong> ${s.signalCount}</span>
+        <span><strong>Symbols:</strong> ${(s.symbols || []).join(", ") || "—"}</span>
+        <span><strong>Scanned:</strong> ${new Date(result.scannedAt).toLocaleString()}</span>
+      `;
+
+      document.getElementById("summary").innerHTML = `
+        <div class="card buy"><div class="label">Buys</div><div class="value">${s.buys}</div></div>
+        <div class="card sell"><div class="label">Sells</div><div class="value">${s.sells}</div></div>
+        <div class="card short"><div class="label">Shorts</div><div class="value">${s.shorts}</div></div>
+        <div class="card cover"><div class="label">Covers</div><div class="value">${s.covers}</div></div>
+        <div class="card"><div class="label">Buy Notional</div><div class="value" style="font-size:1.1rem">${fmtNum(s.buyNotional)}</div></div>
+        <div class="card"><div class="label">Sell Notional</div><div class="value" style="font-size:1.1rem">${fmtNum(s.sellNotional)}</div></div>
+        <div class="card"><div class="label">Net Notional</div><div class="value" style="font-size:1.1rem;color:${s.netNotional >= 0 ? "var(--buy)" : "var(--sell)"}">${fmtNum(s.netNotional)}</div></div>
+      `;
+
+      // Signals table
+      const sigBody = document.querySelector("#signalsTable tbody");
+      if (!result.signals.length) {
+        sigBody.innerHTML = `<tr><td colspan="7" class="empty">No signals detected</td></tr>`;
+      } else {
+        sigBody.innerHTML = result.signals
+          .map(
+            (sig) => `
+          <tr>
+            <td><span class="side-pill side-${sig.side}">${sig.side}</span></td>
+            <td>${escapeHtml(sig.symbol || "—")}</td>
+            <td>${escapeHtml(sig.date || "—")}</td>
+            <td>${fmtNum(sig.price)}</td>
+            <td>${escapeHtml(sig.reason || "")}</td>
+            <td>${sig.strength}<span class="strength-bar"><i style="width:${sig.strength}%"></i></span></td>
+            <td>${escapeHtml(sig.source || "")}</td>
+          </tr>`
+          )
+          .join("");
+      }
+
+      // Rows table — show original headers + detected side
+      const headers = result.table.headers || [];
+      const thead = document.querySelector("#rowsTable thead");
+      const tbody = document.querySelector("#rowsTable tbody");
+      thead.innerHTML =
+        "<tr>" +
+        headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("") +
+        "<th>Detected Side</th></tr>";
+
+      tbody.innerHTML = result.rows
+        .map((row) => {
+          const cells = (row.raw || []).map((c) => `<td>${escapeHtml(c)}</td>`).join("");
+          const side = row.side
+            ? `<span class="side-pill side-${row.side}">${row.side}</span>`
+            : "—";
+          return `<tr>${cells}<td>${side}</td></tr>`;
+        })
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function isExcel(name) {
+      return /\.(xlsx|xls|xlsm)$/i.test(name);
+    }
+
+    function processCsv(text, fileName) {
+      try {
+        const result = window.TradeScanner.scanCsv(text, fileName);
+        render(result);
+      } catch (err) {
+        showError("Failed to parse CSV: " + err.message);
+      }
+    }
+
+    function processExcelArray(data, fileName) {
+      try {
+        const result = window.TradeScanner.scanArray(data, fileName);
+        render(result);
+      } catch (err) {
+        showError("Failed to scan Excel data: " + err.message);
+      }
+    }
+
+    function handleWorkbook(wb, fileName) {
+      pendingWorkbook = wb;
+      pendingFileName = fileName;
+      const names = wb.SheetNames || [];
+      if (!names.length) {
+        showError("Workbook has no sheets.");
+        return;
+      }
+      if (names.length === 1) {
+        sheetPicker.style.display = "none";
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[names[0]], { header: 1, defval: "" });
+        processExcelArray(data, fileName + " · " + names[0]);
+      } else {
+        sheetSelect.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+        sheetPicker.style.display = "flex";
+        // auto-scan first sheet
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[names[0]], { header: 1, defval: "" });
+        processExcelArray(data, fileName + " · " + names[0]);
+      }
+    }
+
+    scanSheetBtn.addEventListener("click", () => {
+      if (!pendingWorkbook) return;
+      const name = sheetSelect.value;
+      const data = XLSX.utils.sheet_to_json(pendingWorkbook.Sheets[name], { header: 1, defval: "" });
+      processExcelArray(data, pendingFileName + " · " + name);
+    });
+
+    function handleFile(file) {
+      if (!file) return;
+      clearError();
+      sheetPicker.style.display = "none";
+      pendingWorkbook = null;
+
+      if (isExcel(file.name)) {
+        if (typeof XLSX === "undefined") {
+          showError("SheetJS library failed to load. Check your network connection.");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: "array", cellDates: true });
+            handleWorkbook(wb, file.name);
+          } catch (err) {
+            showError("Could not read Excel file: " + err.message);
+          }
+        };
+        reader.onerror = () => showError("Failed to read file.");
+        reader.readAsArrayBuffer(file);
+      } else {
+        // CSV / TSV / text
+        const reader = new FileReader();
+        reader.onload = (e) => processCsv(e.target.result, file.name);
+        reader.onerror = () => showError("Failed to read file.");
+        reader.readAsText(file);
+      }
+    }
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    });
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+  </script>
+</body>
+</html>
